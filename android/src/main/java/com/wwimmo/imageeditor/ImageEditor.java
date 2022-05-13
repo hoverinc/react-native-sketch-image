@@ -1,6 +1,10 @@
 package com.wwimmo.imageeditor;
 
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Typeface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -15,17 +19,23 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.VectorDrawable;
 import android.media.ExifInterface;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
-import android.support.annotation.DrawableRes;
-import android.support.graphics.drawable.VectorDrawableCompat;
-import android.support.v7.content.res.AppCompatResources;
+
+import androidx.annotation.DrawableRes;
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
+import androidx.appcompat.content.res.AppCompatResources;
+
+import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.view.ScaleGestureDetector;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
-import android.support.v4.view.GestureDetectorCompat;
+
+import androidx.core.view.GestureDetectorCompat;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.WritableMap;
@@ -36,7 +46,11 @@ import com.facebook.react.uimanager.events.RCTEventEmitter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -138,24 +152,24 @@ public class ImageEditor extends View {
         }
 
         if (includeText) {
-            for(CanvasText text: mArrSketchOnText) {
+            for (CanvasText text : mArrSketchOnText) {
                 canvas.drawText(text.text, text.drawPosition.x + text.lineOffset.x, text.drawPosition.y + text.lineOffset.y, text.paint);
             }
         }
 
         if (mBackgroundImage != null && cropToImageSize) {
-			drawAllEntities(mDrawingCanvas);
+            drawAllEntities(mDrawingCanvas);
             Rect targetRect = new Rect();
             Utility.fillImage(mDrawingBitmap.getWidth(), mDrawingBitmap.getHeight(),
                     bitmap.getWidth(), bitmap.getHeight(), "AspectFill").roundOut(targetRect);
             canvas.drawBitmap(mDrawingBitmap, null, targetRect, mPaint);
         } else {
-			drawAllEntities(mDrawingCanvas);
+            drawAllEntities(mDrawingCanvas);
             canvas.drawBitmap(mDrawingBitmap, 0, 0, mPaint);
         }
 
         if (includeText) {
-            for(CanvasText text: mArrTextOnSketch) {
+            for (CanvasText text : mArrTextOnSketch) {
                 canvas.drawText(text.text, text.drawPosition.x + text.lineOffset.x, text.drawPosition.y + text.lineOffset.y, text.paint);
             }
         }
@@ -163,9 +177,7 @@ public class ImageEditor extends View {
     }
 
     /**
-     *
      * Canvas/Draw related code
-     *
      **/
     public void clear() {
         mPaths.clear();
@@ -208,7 +220,7 @@ public class ImageEditor extends View {
         }
 
         boolean exist = false;
-        for(SketchData data: mPaths) {
+        for (SketchData data : mPaths) {
             if (data.id == id) {
                 exist = true;
                 break;
@@ -230,7 +242,7 @@ public class ImageEditor extends View {
 
     public void deletePath(int id) {
         int index = -1;
-        for(int i = 0; i<mPaths.size(); i++) {
+        for (int i = 0; i < mPaths.size(); i++) {
             if (mPaths.get(i).id == id) {
                 index = i;
                 break;
@@ -266,7 +278,7 @@ public class ImageEditor extends View {
                     Bitmap.Config.ARGB_8888);
             mTranslucentDrawingCanvas = new Canvas(mTranslucentDrawingBitmap);
 
-            for(CanvasText text: mArrCanvasText) {
+            for (CanvasText text : mArrCanvasText) {
                 PointF position = new PointF(text.position.x, text.position.y);
                 if (!text.isAbsoluteCoordinate) {
                     position.x *= getWidth();
@@ -294,7 +306,7 @@ public class ImageEditor extends View {
         if (mNeedsFullRedraw && mDrawingCanvas != null) {
             mDrawingCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
 
-            for(SketchData path: mPaths) {
+            for (SketchData path : mPaths) {
                 path.draw(mDrawingCanvas);
             }
             mNeedsFullRedraw = false;
@@ -308,7 +320,7 @@ public class ImageEditor extends View {
                     null);
         }
 
-        for(CanvasText text: mArrSketchOnText) {
+        for (CanvasText text : mArrSketchOnText) {
             mSketchCanvas.drawText(text.text, text.drawPosition.x + text.lineOffset.x, text.drawPosition.y + text.lineOffset.y, text.paint);
         }
 
@@ -320,7 +332,7 @@ public class ImageEditor extends View {
             mSketchCanvas.drawBitmap(mTranslucentDrawingBitmap, 0, 0, mPaint);
         }
 
-        for(CanvasText text: mArrTextOnSketch) {
+        for (CanvasText text : mArrTextOnSketch) {
             mSketchCanvas.drawText(text.text, text.drawPosition.x + text.lineOffset.x, text.drawPosition.y + text.lineOffset.y, text.paint);
         }
 
@@ -344,7 +356,7 @@ public class ImageEditor extends View {
     private int exifToDegrees(int exifOrientation) {
         if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_90) {
             return 90;
-        } else if(exifOrientation == ExifInterface.ORIENTATION_NORMAL) { 
+        } else if (exifOrientation == ExifInterface.ORIENTATION_NORMAL) {
             return 0;
         } else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_180) {
             return 180;
@@ -355,9 +367,7 @@ public class ImageEditor extends View {
     }
 
     /**
-     *
      * Outgoing Events related code
-     *
      **/
     public void onShapeSelectionChanged(MotionEntity nextSelectedEntity) {
         final WritableMap event = Arguments.createMap();
@@ -395,9 +405,7 @@ public class ImageEditor extends View {
     }
 
     /**
-     *
      * Incoming Events related code
-     *
      **/
     public void setShapeConfiguration(ReadableMap shapeConfiguration) {
         if (shapeConfiguration.hasKey("shapeBorderColor")) {
@@ -408,7 +416,7 @@ public class ImageEditor extends View {
         }
         if (shapeConfiguration.hasKey("shapeBorderStyle")) {
             String borderStyle = shapeConfiguration.getString("shapeBorderStyle");
-            switch(borderStyle) {
+            switch (borderStyle) {
                 case "Dashed":
                     mEntityBorderStyle = BorderStyle.DASHED;
                     break;
@@ -434,32 +442,97 @@ public class ImageEditor extends View {
         }
     }
 
+    private String getRealPathFromURI(Uri contentURI) {
+        String result;
+        Cursor cursor = mContext.getContentResolver().query(contentURI, null, null, null, null);
+        if (cursor == null) { // Source is Dropbox or other similar local file path
+            result = contentURI.getPath();
+        } else {
+            cursor.moveToFirst();
+            int idx = cursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
+            result = cursor.getString(idx);
+            cursor.close();
+        }
+        return result;
+    }
+
     public void save(String format, String folder, String filename, boolean transparent, boolean includeImage, boolean includeText, boolean cropToImageSize) {
-        File f = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + File.separator + folder);
-        boolean success = f.exists() ? true : f.mkdirs();
+
+        boolean success;
+        File rootFolder;
+        File createdFile = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Save file to private directory and copy later to the public one
+            rootFolder = new File(mContext.getFilesDir().getAbsolutePath() + File.separator + folder);
+        } else {
+            // Save file to public directory
+            rootFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath() + File.separator + folder);
+        }
+
+        success = rootFolder.exists() || rootFolder.mkdirs();
         if (success) {
             Bitmap bitmap = createImage(format.equals("png") && transparent, includeImage, includeText, cropToImageSize);
 
-            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) +
-                    File.separator + folder + File.separator + filename + (format.equals("png") ? ".png" : ".jpg"));
+            createdFile = new File(rootFolder.getAbsolutePath() + File.separator + filename + (format.equals("png") ? ".png" : ".jpg"));
             try {
                 bitmap.compress(
                         format.equals("png") ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG,
                         format.equals("png") ? 100 : 90,
-                        new FileOutputStream(file));
-                this.onSaved(true, file.getPath());
+                        new FileOutputStream(createdFile));
+                this.onSaved(true, createdFile.getPath());
+
             } catch (Exception e) {
                 e.printStackTrace();
-                onSaved(false, null);
+                this.onSaved(false, null);
+
             }
         } else {
             Log.e("SketchCanvas", "Failed to create folder!");
-            onSaved(false, null);
+            this.onSaved(false, null);
+
+        }
+
+        if (!success) return;
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Copy file to the public folder
+            String relativePath = Environment.DIRECTORY_PICTURES + File.separator + folder;
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+            contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/" + format);
+            contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath);
+            Uri contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+            ContentResolver resolver = mContext.getContentResolver();
+            Uri uri = resolver.insert(contentUri, contentValues);
+            OutputStream stream = null;
+            try {
+                stream = resolver.openOutputStream(uri);
+                Files.copy(createdFile.toPath(), stream);
+            } catch (IOException e) {
+                e.printStackTrace();
+                if (uri != null) {
+                    // Don't leave an empty entry in the MediaStore
+                    resolver.delete(uri, null, null);
+                }
+            } finally {
+                if (stream != null) {
+                    try {
+                        stream.close();
+                    } catch (IOException ignored) {
+                        // ignore
+                    }
+                }
+            }
+        } else {
+            // Notify system about new media file
+            Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(createdFile));
+            mContext.sendBroadcast(intent);
         }
     }
 
     public boolean openImageFile(String filename, String directory, String mode) {
-        if(filename != null) {
+        if (filename != null) {
             int res = mContext.getResources().getIdentifier(
                     filename.lastIndexOf('.') == -1 ? filename : filename.substring(0, filename.lastIndexOf('.')),
                     "drawable",
@@ -492,7 +565,7 @@ public class ImageEditor extends View {
                 bitmap = BitmapFactory.decodeFile(new File(filename, directory == null ? "" : directory).toString(), bitmapOptions);
             }
 
-            if(bitmap != null) {
+            if (bitmap != null) {
                 mBackgroundImage = bitmap;
                 mOriginalBitmapHeight = bitmap.getHeight();
                 mOriginalBitmapWidth = bitmap.getWidth();
@@ -529,14 +602,14 @@ public class ImageEditor extends View {
         mArrTextOnSketch.clear();
 
         if (aText != null) {
-            for (int i=0; i<aText.size(); i++) {
+            for (int i = 0; i < aText.size(); i++) {
                 ReadableMap property = aText.getMap(i);
                 if (property.hasKey("text")) {
                     String alignment = property.hasKey("alignment") ? property.getString("alignment") : "Left";
                     int lineOffset = 0, maxTextWidth = 0;
                     String[] lines = property.getString("text").split("\n");
                     ArrayList<CanvasText> textSet = new ArrayList<CanvasText>(lines.length);
-                    for (String line: lines) {
+                    for (String line : lines) {
                         ArrayList<CanvasText> arr = property.hasKey("overlay") && "TextOnSketch".equals(property.getString("overlay")) ? mArrTextOnSketch : mArrSketchOnText;
                         CanvasText text = new CanvasText();
                         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -545,15 +618,15 @@ public class ImageEditor extends View {
                         if (property.hasKey("font")) {
                             try {
                                 mTypeface = Typeface.createFromAsset(mContext.getAssets(), property.getString("font"));
-                            } catch(Exception ex) {
+                            } catch (Exception ex) {
                                 mTypeface = Typeface.create(property.getString("font"), Typeface.NORMAL);
                             }
                             p.setTypeface(mTypeface);
                         }
-                        p.setTextSize(property.hasKey("fontSize") ? (float)property.getDouble("fontSize") : 12);
+                        p.setTextSize(property.hasKey("fontSize") ? (float) property.getDouble("fontSize") : 12);
                         p.setColor(property.hasKey("fontColor") ? property.getInt("fontColor") : 0xFF000000);
-                        text.anchor = property.hasKey("anchor") ? new PointF((float)property.getMap("anchor").getDouble("x"), (float)property.getMap("anchor").getDouble("y")) : new PointF(0, 0);
-                        text.position = property.hasKey("position") ? new PointF((float)property.getMap("position").getDouble("x"), (float)property.getMap("position").getDouble("y")) : new PointF(0, 0);
+                        text.anchor = property.hasKey("anchor") ? new PointF((float) property.getMap("anchor").getDouble("x"), (float) property.getMap("anchor").getDouble("y")) : new PointF(0, 0);
+                        text.position = property.hasKey("position") ? new PointF((float) property.getMap("position").getDouble("x"), (float) property.getMap("position").getDouble("y")) : new PointF(0, 0);
                         text.paint = p;
                         text.isAbsoluteCoordinate = !(property.hasKey("coordinate") && "Ratio".equals(property.getString("coordinate")));
                         text.textBounds = new Rect();
@@ -567,7 +640,7 @@ public class ImageEditor extends View {
                         mArrCanvasText.add(text);
                         textSet.add(text);
                     }
-                    for(CanvasText text: textSet) {
+                    for (CanvasText text : textSet) {
                         text.height = lineOffset;
                         if (text.textBounds.width() < maxTextWidth) {
                             float diff = maxTextWidth - text.textBounds.width();
@@ -576,7 +649,7 @@ public class ImageEditor extends View {
                         }
                     }
                     if (getWidth() > 0 && getHeight() > 0) {
-                        for(CanvasText text: textSet) {
+                        for (CanvasText text : textSet) {
                             text.height = lineOffset;
                             PointF position = new PointF(text.position.x, text.position.y);
                             if (!text.isAbsoluteCoordinate) {
@@ -591,8 +664,8 @@ public class ImageEditor extends View {
                         }
                     }
                     if (lines.length > 1) {
-                        for(CanvasText text: textSet) {
-                            switch(alignment) {
+                        for (CanvasText text : textSet) {
+                            switch (alignment) {
                                 case "Left":
                                 default:
                                     break;
@@ -613,12 +686,10 @@ public class ImageEditor extends View {
     }
 
     /**
-     *
      * MotionEntities related code
-     *
      **/
     public void addEntity(EntityType shapeType, String textShapeFontType, int textShapeFontSize, String textShapeText, String imageShapeAsset) {
-        switch(shapeType) {
+        switch (shapeType) {
             case CIRCLE:
                 addCircleEntity();
                 break;
@@ -747,7 +818,7 @@ public class ImageEditor extends View {
         font.setColor(mEntityStrokeColor);
 
         if (fontSize > 0) {
-            float convertedFontSize = (float)fontSize / 200;
+            float convertedFontSize = (float) fontSize / 200;
             font.setSize(convertedFontSize);
         } else {
             font.setSize(TextLayer.Limits.INITIAL_FONT_SIZE);
@@ -757,7 +828,7 @@ public class ImageEditor extends View {
             Typeface typeFace = null;
             try {
                 typeFace = Typeface.createFromAsset(mContext.getAssets(), fontType);
-            } catch(Exception ex) {
+            } catch (Exception ex) {
                 typeFace = Typeface.create(fontType, Typeface.NORMAL);
             }
             font.setTypeface(typeFace);
@@ -918,17 +989,15 @@ public class ImageEditor extends View {
     }
 
     /**
-     *
      * Gesture Listeners
-     *
+     * <p>
      * Connect the gesture detectors to the native touch listener. The
      * JS-PanResponder is disabled while a MotionEntity is selected immediately. The
      * JS-PanResponder is enabled again with a 150ms delay, through the
      * onShapeSelectionChanged event, when the MotionEntity is deselected.
-     *
+     * <p>
      * The 100-150ms delay is there to ensure no point is drawn when deselecting a
      * shape.
-     *
      **/
     private final View.OnTouchListener mOnTouchListener = new View.OnTouchListener() {
         @Override
