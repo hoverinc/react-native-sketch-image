@@ -48,6 +48,7 @@ export interface SavePreference {
     includeImage?: boolean;
     includeText?: boolean;
     cropToImageSize?: boolean;
+    copyToGallery?: boolean;
 }
 
 export interface LocalSourceImage {
@@ -136,7 +137,8 @@ export class ImageEditor extends React.Component<ImageEditorProps & ViewProperti
         filename: string,
         includeImage: boolean,
         includeText: boolean,
-        cropToImageSize: boolean
+        cropToImageSize: boolean,
+        copyToGallery: boolean,
     ): void;
     getPaths(): Path[];
 

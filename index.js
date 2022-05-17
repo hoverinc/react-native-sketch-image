@@ -202,7 +202,8 @@ export default class RNImageEditor extends React.Component {
                 p.filename,
                 p.includeImage !== false,
                 p.includeText !== false,
-                p.cropToImageSize || false
+                p.cropToImageSize || false,
+                p.copyToGallery || false,
             );
         } else {
             const date = new Date();
@@ -223,6 +224,7 @@ export default class RNImageEditor extends React.Component {
                     ("0" + date.getSeconds()).slice(-2),
                 true,
                 true,
+                false,
                 false
             );
         }

@@ -243,11 +243,11 @@ class ImageEditor extends React.Component {
         );
     }
 
-    save(imageType, transparent, folder, filename, includeImage, includeText, cropToImageSize) {
+    save(imageType, transparent, folder, filename, includeImage, includeText, cropToImageSize, copyToGallery) {
         UIManager.dispatchViewManagerCommand(
             this._handle,
             UIManager.getViewManagerConfig(RNImageEditor).Commands.save,
-            [imageType, folder, filename, transparent, includeImage, includeText, cropToImageSize]
+            [imageType, folder, filename, transparent, includeImage, includeText, cropToImageSize, copyToGallery]
         );
     }
 

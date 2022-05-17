@@ -456,18 +456,13 @@ public class ImageEditor extends View {
         return result;
     }
 
-    public void save(String format, String folder, String filename, boolean transparent, boolean includeImage, boolean includeText, boolean cropToImageSize) {
+    public void save(String format, String folder, String filename, boolean transparent, boolean includeImage, boolean includeText, boolean cropToImageSize, boolean saveToGallery) {
 
         boolean success;
         File rootFolder;
         File createdFile = null;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Save file to private directory and copy later to the public one
-            rootFolder = new File(mContext.getFilesDir().getAbsolutePath() + File.separator + folder);
-        } else {
-            // Save file to public directory
-            rootFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath() + File.separator + folder);
-        }
+        // Save file to private directory
+        rootFolder = new File(mContext.getFilesDir().getAbsolutePath() + File.separator + folder);
 
         success = rootFolder.exists() || rootFolder.mkdirs();
         if (success) {
@@ -480,26 +475,30 @@ public class ImageEditor extends View {
                         format.equals("png") ? 100 : 90,
                         new FileOutputStream(createdFile));
                 this.onSaved(true, createdFile.getPath());
-
+                success = true;
             } catch (Exception e) {
                 e.printStackTrace();
                 this.onSaved(false, null);
-
+                success = false;
             }
         } else {
             Log.e("SketchCanvas", "Failed to create folder!");
             this.onSaved(false, null);
-
+            success = false;
         }
 
-        if (!success) return;
+        if (success && saveToGallery) {
+            copyToGallery(createdFile, folder, format);
+        }
 
+    }
 
+    public void copyToGallery(File createdFile, String folder, String format) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             // Copy file to the public folder
             String relativePath = Environment.DIRECTORY_PICTURES + File.separator + folder;
             ContentValues contentValues = new ContentValues();
-            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, createdFile.getName());
             contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/" + format);
             contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath);
             Uri contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
@@ -525,11 +524,25 @@ public class ImageEditor extends View {
                 }
             }
         } else {
-            // Notify system about new media file
-            Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(createdFile));
-            mContext.sendBroadcast(intent);
+            // Save file to public directory
+            File rootFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath() + File.separator + folder);
+            boolean exist = rootFolder.exists() || rootFolder.mkdirs();
+            if (exist) {
+                File copiedFile = new File(rootFolder.getAbsolutePath() + File.separator + createdFile.getName() + (format.equals("png") ? ".png" : ".jpg"));
+                try {
+                    OutputStream stream = new FileOutputStream(copiedFile);
+                    Files.copy(createdFile.toPath(), stream);
+                    // Notify system about new media file
+                    Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(createdFile));
+                    mContext.sendBroadcast(intent);
+                } catch (IOException e) {
+                    // ignore
+                }
+
+            }
         }
     }
+
 
     public boolean openImageFile(String filename, String directory, String mode) {
         if (filename != null) {
