@@ -57,6 +57,7 @@ import java.util.TimerTask;
 
 import com.wwimmo.imageeditor.utils.CanvasText;
 import com.wwimmo.imageeditor.utils.Utility;
+import com.wwimmo.imageeditor.utils.entities.RulerLineEntity;
 import com.wwimmo.imageeditor.utils.layers.Font;
 import com.wwimmo.imageeditor.utils.layers.Layer;
 import com.wwimmo.imageeditor.utils.layers.TextLayer;
@@ -721,6 +722,9 @@ public class ImageEditor extends View {
             case ARROW:
                 addArrowEntity();
                 break;
+            case RULER :
+                addRulerEntity();
+                break;
             case IMAGE:
                 // TODO: Doesn't exist yet
                 break;
@@ -777,6 +781,23 @@ public class ImageEditor extends View {
         PointF center = arrowEntity.absoluteCenter();
         center.y = center.y * 0.5F;
         arrowEntity.moveCenterTo(center);
+
+        invalidateCanvas(true);
+    }
+
+    protected void addRulerEntity() {
+        Layer arrowLayer = new Layer();
+        MotionEntity entity = null;
+        if (mSketchCanvas.getWidth() < 100 || mSketchCanvas.getHeight() < 100) {
+            entity = new RulerLineEntity(arrowLayer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight(), 600, 600, 20f, mEntityStrokeWidth, mEntityStrokeColor);
+        } else {
+            entity = new RulerLineEntity(arrowLayer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight(), 600, 600, 20f, mEntityStrokeWidth, mEntityStrokeColor);
+        }
+        addEntityAndPosition(entity);
+
+        PointF center = entity.absoluteCenter();
+        center.y = center.y * 0.5F;
+        entity.moveCenterTo(center);
 
         invalidateCanvas(true);
     }

@@ -176,6 +176,9 @@ public class ImageEditorManager extends SimpleViewManager<ImageEditor> {
                     case "Image":
                         shapeType = EntityType.IMAGE;
                         break;
+                    case "Ruler":
+                        shapeType = EntityType.RULER;
+                        break;
                     default:
                         shapeType = EntityType.CIRCLE;
                         break;
