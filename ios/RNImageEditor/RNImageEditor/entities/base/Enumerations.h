@@ -19,4 +19,5 @@ typedef enum EntityType {
     ARROW,
     TEXT,
     IMAGE,
+    RULER,
 };
