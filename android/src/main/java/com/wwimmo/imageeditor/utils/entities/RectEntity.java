@@ -25,11 +25,11 @@ public class RectEntity extends MotionEntity {
 
     public RectEntity(@NonNull Layer layer,
                         @IntRange(from = 1) int canvasWidth,
-                        @IntRange(from = 1) int canvasHeight, 
-                        @IntRange(from = 1) int rectWidth, 
-                        @IntRange(from = 1) int rectHeight, 
-                        @Nullable Float bordersPadding, 
-                        @Nullable Float strokeWidth, 
+                        @IntRange(from = 1) int canvasHeight,
+                        @IntRange(from = 1) int rectWidth,
+                        @IntRange(from = 1) int rectHeight,
+                        @Nullable Float bordersPadding,
+                        @Nullable Float strokeWidth,
                         @Nullable Integer strokeColor) {
         super(layer, canvasWidth, canvasHeight);
 
@@ -98,15 +98,10 @@ public class RectEntity extends MotionEntity {
             this.mStrokeColor = paint.getColor();
             this.mStrokeWidth = paint.getStrokeWidth();
         }
-        
+
         this.mRectPaint = new Paint();
         this.mRectPaint.setColor(this.mStrokeColor);
-        if (getWidth() == getHeight()) {
-            this.mRectPaint.setStrokeWidth(this.mStrokeWidth / getLayer().getScale());
-        } else {
-            // If we draw a rect the strokeWidth was scaled higher than it should've been as width != height on a rect...
-            this.mRectPaint.setStrokeWidth((this.mStrokeWidth-2.5f) / getLayer().getScale());
-        }
+        this.mRectPaint.setStrokeWidth(this.mStrokeWidth / getLayer().getScale());
 
         // TODO: Rect Border gets pixelated because it's just done once (initially)!
         this.mRectPaint.setAntiAlias(true);
