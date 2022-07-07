@@ -5,23 +5,23 @@ def safeExtGet(prop, fallback) {
 }
 
 android {
-    compileSdkVersion safeExtGet('compileSdkVersion', 27)
-    buildToolsVersion safeExtGet('buildToolsVersion', '27.0.3')
+    compileSdkVersion safeExtGet('compileSdkVersion', 31)
+    buildToolsVersion safeExtGet('buildToolsVersion', '30.0.2')
 
     defaultConfig {
-        minSdkVersion safeExtGet('minSdkVersion', 16)
-        targetSdkVersion safeExtGet('targetSdkVersion', 27)
+        minSdkVersion safeExtGet('minSdkVersion', 26)
+        targetSdkVersion safeExtGet('targetSdkVersion', 30)
         versionCode 1
         versionName "1.0"
     }
-    splits {
-        abi {
-            reset()
-            enable safeExtGet('enableSeparateBuildPerCPUArchitecture', false)
-            universalApk safeExtGet('universalApk', false)  // If true, also generate a universal APK
-            include "armeabi-v7a", "x86", "arm64-v8a", "x86_64"
-        }
-    }
+//    splits {
+//        abi {
+//            reset()
+//            enable safeExtGet('enableSeparateBuildPerCPUArchitecture', false)
+//            universalApk safeExtGet('universalApk', false)  // If true, also generate a universal APK
+//            include "armeabi-v7a", "x86", "arm64-v8a", "x86_64"
+//        }
+//    }
 }
 
 dependencies {
