@@ -1,34 +1,19 @@
 package com.wwimmo.imageeditor;
 
-import android.app.Activity;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.pm.ActivityInfo;
-import android.content.res.Configuration;
-import android.util.Log;
+import android.graphics.PointF;
 
-import com.facebook.common.logging.FLog;
-import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.bridge.ReactMethod;
-import com.facebook.react.common.ReactConstants;
-import com.facebook.react.common.MapBuilder;
-import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.uimanager.SimpleViewManager;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.annotations.ReactProp;
+import com.wwimmo.imageeditor.utils.entities.EntityType;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ArrayList;
-import android.graphics.PointF;
 
 import javax.annotation.Nullable;
-
-import com.wwimmo.imageeditor.utils.entities.EntityType;
 
 public class ImageEditorManager extends SimpleViewManager<ImageEditor> {
     public static final int COMMAND_ADD_POINT = 1;
@@ -73,9 +58,9 @@ public class ImageEditorManager extends SimpleViewManager<ImageEditor> {
     public void setLocalSourceImage(ImageEditor viewContainer, ReadableMap localSourceImage) {
         if (localSourceImage != null && localSourceImage.getString("filename") != null) {
             viewContainer.openImageFile(
-                localSourceImage.hasKey("filename") ? localSourceImage.getString("filename") : null,
-                localSourceImage.hasKey("directory") ? localSourceImage.getString("directory") : "",
-                localSourceImage.hasKey("mode") ? localSourceImage.getString("mode") : ""
+                    localSourceImage.hasKey("filename") ? localSourceImage.getString("filename") : null,
+                    localSourceImage.hasKey("directory") ? localSourceImage.getString("directory") : "",
+                    localSourceImage.hasKey("mode") ? localSourceImage.getString("mode") : ""
             );
         }
     }
@@ -86,7 +71,7 @@ public class ImageEditorManager extends SimpleViewManager<ImageEditor> {
     }
 
     @Override
-    public Map<String,Integer> getCommandsMap() {
+    public Map<String, Integer> getCommandsMap() {
         Map<String, Integer> map = new HashMap<>();
 
         map.put("addPoint", COMMAND_ADD_POINT);
@@ -115,11 +100,11 @@ public class ImageEditorManager extends SimpleViewManager<ImageEditor> {
     public void receiveCommand(ImageEditor view, int commandType, @Nullable ReadableArray args) {
         switch (commandType) {
             case COMMAND_ADD_POINT: {
-                view.addPoint((float)args.getDouble(0), (float)args.getDouble(1), (boolean)args.getBoolean(2));
+                view.addPoint((float) args.getDouble(0), (float) args.getDouble(1), (boolean) args.getBoolean(2));
                 return;
             }
             case COMMAND_NEW_PATH: {
-                view.newPath(args.getInt(0), args.getInt(1), (float)args.getDouble(2));
+                view.newPath(args.getInt(0), args.getInt(1), (float) args.getDouble(2));
                 return;
             }
             case COMMAND_CLEAR: {
@@ -129,11 +114,11 @@ public class ImageEditorManager extends SimpleViewManager<ImageEditor> {
             case COMMAND_ADD_PATH: {
                 ReadableArray path = args.getArray(3);
                 ArrayList<PointF> pointPath = new ArrayList<PointF>(path.size());
-                for (int i=0; i<path.size(); i++) {
+                for (int i = 0; i < path.size(); i++) {
                     String[] coor = path.getString(i).split(",");
                     pointPath.add(new PointF(Float.parseFloat(coor[0]), Float.parseFloat(coor[1])));
                 }
-                view.addPath(args.getInt(0), args.getInt(1), (float)args.getDouble(2), pointPath);
+                view.addPath(args.getInt(0), args.getInt(1), (float) args.getDouble(2), pointPath);
                 return;
             }
             case COMMAND_DELETE_PATH: {
@@ -154,7 +139,7 @@ public class ImageEditorManager extends SimpleViewManager<ImageEditor> {
             }
             case COMMAND_ADD_SHAPE: {
                 EntityType shapeType = null;
-                switch(args.getString(0)) {
+                switch (args.getString(0)) {
                     case "Circle":
                         shapeType = EntityType.CIRCLE;
                         break;
@@ -178,6 +163,9 @@ public class ImageEditorManager extends SimpleViewManager<ImageEditor> {
                         break;
                     case "Ruler":
                         shapeType = EntityType.RULER;
+                        break;
+                    case "MeasurementTool":
+                        shapeType = EntityType.MEASUREMENT_TOOL;
                         break;
                     default:
                         shapeType = EntityType.CIRCLE;

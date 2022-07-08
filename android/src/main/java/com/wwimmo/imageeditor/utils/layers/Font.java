@@ -2,7 +2,7 @@ package com.wwimmo.imageeditor.utils.layers;
 
 import com.facebook.react.uimanager.ThemedReactContext;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.text.TextUtils;
 import android.graphics.Typeface;
 

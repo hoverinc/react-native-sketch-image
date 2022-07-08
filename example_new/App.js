@@ -14,6 +14,8 @@ import { Colors } from "react-native/Libraries/NewAppScreen";
 
 import RNImageEditor, { ImageEditor } from "@hoverinc/react-native-sketch-canvas";
 import { RNCamera } from "react-native-camera";
+import { BuildInUIComponents } from "./src/BuildInUIComponents";
+import { CanvasOnly } from "./src/CanvasOnly";
 
 const App: () => Node = () => {
   const isDarkMode = useColorScheme() === "dark";
@@ -26,10 +28,10 @@ const App: () => Node = () => {
     scrollEnabled: true,
     touchEnabled: true,
   });
-const canvas = useRef();
-const canvas1 = useRef();
-const canvas2 = useRef();
-const camera = useRef();
+  const canvas = useRef();
+  const canvas1 = useRef();
+  const canvas2 = useRef();
+  const camera = useRef();
 
   const setState = (partial) => {
     setAllState(prev => ({
@@ -103,156 +105,12 @@ const camera = useRef();
 
       {
         state.example === 1 &&
-        <View style={{ flex: 1, flexDirection: "row" }}>
-          <RNImageEditor
-            ref={canvas}
-            touchEnabled={state.touchEnabled}
-            containerStyle={{ backgroundColor: "transparent", flex: 1 }}
-            canvasStyle={{ backgroundColor: "transparent", flex: 1 }}
-            onStrokeEnd={data => {
-            }}
-            closeComponent={<View style={styles.functionButton}><Text style={{ color: "white" }}>Close</Text></View>}
-            onClosePressed={() => {
-              setState({ example: 0 });
-            }}
-            undoComponent={<View style={styles.functionButton}><Text style={{ color: "white" }}>Undo</Text></View>}
-            onUndoPressed={(id) => {
-              canvas.current.addShape({ shapeType: "Circle" });
-              canvas.current.addShape({ shapeType: "Rect" });
-              // this.canvas.addShape({ shapeType: 'Square' });
-              // this.canvas.addShape({ shapeType: 'Triangle' });
-              // this.canvas.addShape({ shapeType: 'Arrow' });
-              // this.canvas.addShape({ shapeType: 'Text', textShapeFontSize: 10, textShapeText: "Added TextShape from JS" });
-              // this.canvas.addShape({ shapeType: 'Text', textShapeFontType: 'fonts/IndieFlower.ttf', textShapeFontSize: 5, textShapeText: "Added TextShape with custom TypeFace" });
-              // Alert.alert('do something')
-            }}
-            clearComponent={<View style={styles.functionButton}><Text style={{ color: "white" }}>Clear</Text></View>}
-            onClearPressed={() => {
-              // this.canvas.decreaseSelectedShapeFontsize();
-              // this.canvas.increaseSelectedShapeFontsize();
-              // this.canvas.changeSelectedShapeText("Random text " + Math.random());
-              // Alert.alert('do something')
-            }}
-            eraseComponent={<View style={styles.functionButton}><Text style={{ color: "white" }}>Eraser</Text></View>}
-            deleteSelectedShapeComponent={<View style={styles.functionButton}><Text
-              style={{ color: "white" }}>Delete</Text></View>}
-            strokeComponent={color => (
-              <View style={[{ backgroundColor: color }, styles.strokeColorButton]} />
-            )}
-            strokeSelectedComponent={(color, index, changed) => {
-              return (
-                <View style={[{ backgroundColor: color, borderWidth: 2 }, styles.strokeColorButton]} />
-              );
-            }}
-            strokeWidthComponent={(w) => {
-              return (<View style={styles.strokeWidthButton}>
-                  <View style={{
-                    backgroundColor: "white",
-                    marginHorizontal: 2.5,
-                    width: Math.sqrt(w / 3) * 10,
-                    height: Math.sqrt(w / 3) * 10,
-                    borderRadius: Math.sqrt(w / 3) * 10 / 2,
-                  }} />
-                </View>
-              );
-            }}
-            defaultStrokeIndex={0}
-            defaultStrokeWidth={5}
-            saveComponent={<View style={styles.functionButton}><Text style={{ color: "white" }}>Save</Text></View>}
-            savePreference={() => {
-              return {
-                folder: "RNImageEditor",
-                filename: String(Math.ceil(Math.random() * 100000000)),
-                transparent: false,
-                imageType: "png",
-              };
-            }}
-            onSketchSaved={(success, path) => {
-              Alert.alert(success ? "Image saved!" : "Failed to save image!", path);
-            }}
-            onPathsChange={(pathsCount) => {
-              console.log("pathsCount", pathsCount);
-            }}
-            onShapeSelectionChanged={(isShapeSelected) => {
-              setState({ touchEnabled: !isShapeSelected });
-            }}
-            shapeConfiguration={{ shapeBorderColor: "black", shapeBorderStyle: "Dashed", shapeBorderStrokeWidth: 1 }}
-          />
-        </View>
+        <BuildInUIComponents canvas={canvas} setState={setState} state={state} styles={styles} />
       }
 
       {
         state.example === 2 &&
-        <View style={{ flex: 1, flexDirection: "row" }}>
-          <View style={{ flex: 1, flexDirection: "column" }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <TouchableOpacity style={styles.functionButton} onPress={() => {
-                setState({ example: 0 });
-              }}>
-                <Text style={{ color: "white" }}>Close</Text>
-              </TouchableOpacity>
-              <View style={{ flexDirection: "row" }}>
-                <TouchableOpacity style={styles.functionButton} onPress={() => {
-                  setState({ thickness: 10 });
-                }}>
-                  <Text style={{ color: "white" }}>Thick</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.functionButton} onPress={() => {
-                  setState({ thickness: 5 });
-                }}>
-                  <Text style={{ color: "white" }}>Thin</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <ImageEditor
-              localSourceImage={{ filename: "whale.png", directory: ImageEditor.MAIN_BUNDLE, mode: "AspectFit" }}
-              // localSourceImage={{ filename: 'bulb.png', directory: RNImageEditor.MAIN_BUNDLE }}
-              ref={canvas}
-              style={{ flex: 1 }}
-              strokeColor={state.color}
-              strokeWidth={state.thickness}
-              onStrokeStart={(x, y) => {
-                console.log("x: ", x, ", y: ", y);
-                setState({ message: "Start" });
-              }}
-              onStrokeChanged={(x, y) => {
-                console.log("x: ", x, ", y: ", y);
-                setState({ message: "Changed" });
-              }}
-              onStrokeEnd={() => {
-                setState({ message: "End" });
-              }}
-              onPathsChange={(pathsCount) => {
-                console.log("pathsCount", pathsCount);
-              }}
-            />
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <View style={{ flexDirection: "row" }}>
-                <TouchableOpacity style={[styles.functionButton, { backgroundColor: "red" }]} onPress={() => {
-                  setState({ color: "#FF0000" });
-                }}>
-                  <Text style={{ color: "white" }}>Red</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.functionButton, { backgroundColor: "black" }]} onPress={() => {
-                  setState({ color: "#000000" });
-                }}>
-                  <Text style={{ color: "white" }}>Black</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={{ marginRight: 8, fontSize: 20 }}>{state.message}</Text>
-              <TouchableOpacity style={[styles.functionButton, { backgroundColor: "black", width: 90 }]}
-                                onPress={() => {
-                                  console.log(canvas.current.getPaths());
-                                  Alert.alert(JSON.stringify(canvas.current.getPaths()));
-                                  canvas.current.getBase64("jpg", false, true, true, (err, result) => {
-                                    console.log(result);
-                                  });
-                                }}>
-                <Text style={{ color: "white" }}>Get Paths</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+        <CanvasOnly canvas={canvas} setState={setState} state={state} styles={styles} />
       }
 
       {
@@ -705,9 +563,9 @@ const camera = useRef();
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F5FCFF",
   },
   strokeColorButton: {
     marginHorizontal: 2.5,
@@ -722,48 +580,48 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#39579A'
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#39579A",
   },
   functionButton: {
     marginHorizontal: 2.5,
     marginVertical: 8,
     height: 30,
     width: 60,
-    backgroundColor: '#39579A',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#39579A",
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 5,
   },
   cameraContainer: {
     flex: 1,
-    flexDirection: 'column',
-    backgroundColor: 'black',
-    alignSelf: 'stretch'
+    flexDirection: "column",
+    backgroundColor: "black",
+    alignSelf: "stretch",
   },
   preview: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   capture: {
     flex: 0,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 5,
     padding: 15,
     paddingHorizontal: 20,
-    alignSelf: 'center',
-    margin: 20
+    alignSelf: "center",
+    margin: 20,
   },
   page: {
     flex: 1,
     height: 300,
     elevation: 2,
     marginVertical: 8,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.75,
-    shadowRadius: 2
+    shadowRadius: 2,
   },
 
   sectionContainer: {

@@ -4,7 +4,7 @@ import android.util.Log;
 import android.util.DisplayMetrics;
 import android.graphics.RectF;
 import android.graphics.PointF;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 public final class Utility {
     public static RectF fillImage(float imgWidth, float imgHeight, float targetWidth, float targetHeight, String mode) {

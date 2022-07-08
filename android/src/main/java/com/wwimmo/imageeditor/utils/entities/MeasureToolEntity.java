@@ -7,13 +7,17 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
+
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.wwimmo.imageeditor.utils.layers.Layer;
 
-public class ArrowEntity extends MotionEntity {
+import java.util.ArrayList;
+import java.util.List;
+
+public class MeasureToolEntity extends MotionEntity {
     private int mWidth;
     private int mHeight;
     private float mBordersPadding;
@@ -23,33 +27,23 @@ public class ArrowEntity extends MotionEntity {
     private Paint mArrowPaint;
     private Bitmap mArrowBitmap;
     private Canvas mArrowCanvas;
+    private List<PointF> currentPoints;
 
-    public ArrowEntity(@NonNull Layer layer,
-                        @IntRange(from = 1) int canvasWidth,
-                        @IntRange(from = 1) int canvasHeight, 
-                        @IntRange(from = 1) int width,
-                        @IntRange(from = 1) int height,
-                        @Nullable Float bordersPadding, 
-                        @Nullable Float strokeWidth, 
-                        @Nullable Integer strokeColor) {
+    private static final int POINTS_COUNT = 3;
+    private static final int MIN_POINTS_DISTANCE = 200;
+    private static final int POINT_TOUCH_AREA = 100;
+
+    public MeasureToolEntity(@NonNull Layer layer,
+                             @IntRange(from = 1) int canvasWidth,
+                             @IntRange(from = 1) int canvasHeight) {
         super(layer, canvasWidth, canvasHeight);
 
-        this.mWidth = width;
-        this.mHeight = height;
+        this.mWidth = canvasWidth;
+        this.mHeight = canvasHeight;
         this.mStrokeWidth = 5;
         this.mBordersPadding = 10;
         this.mStrokeColor = Color.BLACK;
-
-        if (bordersPadding != null) {
-            this.mBordersPadding = bordersPadding;
-        }
-        if (strokeWidth != null) {
-            this.mStrokeWidth = strokeWidth;
-        }
-        if (strokeColor != null) {
-            this.mStrokeColor = strokeColor;
-        }
-
+        currentPoints = new ArrayList<>();
         updateEntity(false);
     }
 
@@ -82,6 +76,11 @@ public class ArrowEntity extends MotionEntity {
         }
     }
 
+    @Override
+    protected void updateMatrix() {
+//        super.updateMatrix();
+    }
+
     private void configureArrowBitmap(@Nullable Paint paint) {
         updatePaint(paint);
         if (this.mArrowBitmap == null) {
@@ -90,36 +89,32 @@ public class ArrowEntity extends MotionEntity {
         }
         this.mArrowCanvas.save();
         this.mArrowCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-        this.drawArrow();
+        float savedStrokeWidth  = mArrowPaint.getStrokeWidth();
+        if (currentPoints.size() > 0) {
+            for (int i = 0; i < currentPoints.size(); i ++) {
+                PointF pointF = currentPoints.get(i);
+                this.drawPoint(pointF, mArrowPaint);
+                mArrowPaint.setStrokeWidth(savedStrokeWidth);
+                if (i > 0){
+                    PointF prevPointF = currentPoints.get(i -1);
+                    mArrowCanvas.drawLine(prevPointF.x, prevPointF.y, pointF.x, pointF.y, mArrowPaint);
+                }
+            }
+        }
+
         this.mArrowCanvas.restore();
     }
 
     private void drawArrow() {
         int halfWidth = mWidth / 2;
-        int oneThirdWidth = mWidth / 3;
         int halfHeight = mHeight / 2;
-        int oneThirdHeight = mHeight / 3;
+        int sideLine  = mHeight / 8;
 
         float centerX = getLayer().getX() + halfWidth;
         float centerY = getLayer().getY() + halfHeight;
-        
-        Path arrowPath = new Path();
 
-        // Arrow with adjacents to centerY
-        // arrowPath.moveTo(centerX, centerY + halfHeight - mBordersPadding); // Start at bottom center
-        // arrowPath.lineTo(centerX, getLayer().getY() + mBordersPadding); // Draw -- from bottom up
-        // arrowPath.lineTo(centerX - halfWidth + mBordersPadding, centerY); // Draw left adjacent from top
-        // arrowPath.lineTo(centerX, getLayer().getY() + mBordersPadding); // Go Back to top
-        // arrowPath.lineTo(centerX + halfWidth - mBordersPadding, centerY); // Draw right adjacent from top
 
-        // Arrow with adjacents to Y + 1/3 of the height
-        arrowPath.moveTo(centerX, centerY + halfHeight - mBordersPadding); // Start at bottom center
-        arrowPath.lineTo(centerX, getLayer().getY() + mBordersPadding); // Draw -- from bottom up
-        arrowPath.lineTo(centerX - oneThirdWidth + mBordersPadding, getLayer().getY() + oneThirdHeight); // Draw left adjacent from top
-        arrowPath.lineTo(centerX, getLayer().getY() + mBordersPadding); // Go Back to top
-        arrowPath.lineTo(centerX + oneThirdWidth - mBordersPadding, getLayer().getY() + oneThirdHeight); // Draw right adjacent from top
-
-        this.mArrowCanvas.drawPath(arrowPath, mArrowPaint);
+        this.mArrowCanvas.drawCircle(centerX, centerY, 20, mArrowPaint);
     }
 
     private void updatePaint(@Nullable Paint paint) {
@@ -176,5 +171,29 @@ public class ArrowEntity extends MotionEntity {
         if (this.mArrowBitmap != null && !this.mArrowBitmap.isRecycled()) {
             this.mArrowBitmap.recycle();
         }
+    }
+
+    public boolean addPoint(float x, float y) {
+        if (currentPoints.size() < POINTS_COUNT) {
+            currentPoints.add(new PointF(x, y));
+            return true;
+        }
+        return false;
+    }
+
+    private void drawPoint(PointF point, Paint paint) {
+        float x = point.x;
+        float y = point.y;
+        this.mArrowPaint.setStyle(Paint.Style.FILL);
+        this.mArrowCanvas.drawCircle(x, y, 16, paint);
+        paint.setStrokeWidth(2);
+        this.mArrowPaint.setStyle(Paint.Style.STROKE);
+        this.mArrowCanvas.drawCircle(x, y, 20, paint);
+    }
+
+    @Override
+    public boolean pointInLayerRect(PointF point) {
+        // TOD add custom check
+        return false;
     }
 }

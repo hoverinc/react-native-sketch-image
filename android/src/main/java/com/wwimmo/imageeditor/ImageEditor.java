@@ -5,16 +5,16 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.graphics.Typeface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
-import android.graphics.Matrix;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.VectorDrawable;
@@ -22,31 +22,45 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
-
-import androidx.annotation.DrawableRes;
-import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
-import androidx.appcompat.content.res.AppCompatResources;
-
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
-import android.view.View;
-import android.view.ScaleGestureDetector;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
+import android.view.View;
 
+import androidx.annotation.DrawableRes;
+import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.view.GestureDetectorCompat;
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
 
 import com.facebook.react.bridge.Arguments;
-import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
+import com.wwimmo.imageeditor.utils.CanvasText;
+import com.wwimmo.imageeditor.utils.Utility;
+import com.wwimmo.imageeditor.utils.entities.ArrowEntity;
+import com.wwimmo.imageeditor.utils.entities.BorderStyle;
+import com.wwimmo.imageeditor.utils.entities.CircleEntity;
+import com.wwimmo.imageeditor.utils.entities.EntityType;
+import com.wwimmo.imageeditor.utils.entities.MeasureToolEntity;
+import com.wwimmo.imageeditor.utils.entities.MotionEntity;
+import com.wwimmo.imageeditor.utils.entities.RectEntity;
+import com.wwimmo.imageeditor.utils.entities.RulerLineEntity;
+import com.wwimmo.imageeditor.utils.entities.TextEntity;
+import com.wwimmo.imageeditor.utils.entities.TriangleEntity;
+import com.wwimmo.imageeditor.utils.gestureDetectors.MoveGestureDetector;
+import com.wwimmo.imageeditor.utils.gestureDetectors.RotateGestureDetector;
+import com.wwimmo.imageeditor.utils.layers.Font;
+import com.wwimmo.imageeditor.utils.layers.Layer;
+import com.wwimmo.imageeditor.utils.layers.TextLayer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -55,33 +69,16 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.wwimmo.imageeditor.utils.CanvasText;
-import com.wwimmo.imageeditor.utils.Utility;
-import com.wwimmo.imageeditor.utils.entities.RulerLineEntity;
-import com.wwimmo.imageeditor.utils.layers.Font;
-import com.wwimmo.imageeditor.utils.layers.Layer;
-import com.wwimmo.imageeditor.utils.layers.TextLayer;
-import com.wwimmo.imageeditor.utils.entities.ArrowEntity;
-import com.wwimmo.imageeditor.utils.entities.BorderStyle;
-import com.wwimmo.imageeditor.utils.entities.EntityType;
-import com.wwimmo.imageeditor.utils.entities.CircleEntity;
-import com.wwimmo.imageeditor.utils.entities.RectEntity;
-import com.wwimmo.imageeditor.utils.entities.MotionEntity;
-import com.wwimmo.imageeditor.utils.entities.TriangleEntity;
-import com.wwimmo.imageeditor.utils.entities.TextEntity;
-import com.wwimmo.imageeditor.utils.gestureDetectors.MoveGestureDetector;
-import com.wwimmo.imageeditor.utils.gestureDetectors.RotateGestureDetector;
-
 public class ImageEditor extends View {
     // Data
-    private ArrayList<SketchData> mPaths = new ArrayList<SketchData>();
+    private final ArrayList<SketchData> mPaths = new ArrayList<SketchData>();
     private SketchData mCurrentPath = null;
 
     // Gesture Detection
-    private ScaleGestureDetector mScaleGestureDetector;
-    private RotateGestureDetector mRotateGestureDetector;
-    private MoveGestureDetector mMoveGestureDetector;
-    private GestureDetectorCompat mGestureDetectorCompat;
+    private final ScaleGestureDetector mScaleGestureDetector;
+    private final RotateGestureDetector mRotateGestureDetector;
+    private final MoveGestureDetector mMoveGestureDetector;
+    private final GestureDetectorCompat mGestureDetectorCompat;
 
     // Shapes/Entities
     private final ArrayList<MotionEntity> mEntities = new ArrayList<MotionEntity>();
@@ -93,9 +90,9 @@ public class ImageEditor extends View {
     private int mEntityStrokeColor = Color.BLACK;
 
     // Text
-    private ArrayList<CanvasText> mArrCanvasText = new ArrayList<CanvasText>();
-    private ArrayList<CanvasText> mArrTextOnSketch = new ArrayList<CanvasText>();
-    private ArrayList<CanvasText> mArrSketchOnText = new ArrayList<CanvasText>();
+    private final ArrayList<CanvasText> mArrCanvasText = new ArrayList<CanvasText>();
+    private final ArrayList<CanvasText> mArrTextOnSketch = new ArrayList<CanvasText>();
+    private final ArrayList<CanvasText> mArrSketchOnText = new ArrayList<CanvasText>();
     private Typeface mTypeface;
 
     // Bitmap
@@ -106,9 +103,9 @@ public class ImageEditor extends View {
     private String mBitmapContentMode;
 
     // General
-    private Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Canvas mSketchCanvas = null;
-    private ThemedReactContext mContext;
+    private final ThemedReactContext mContext;
     private boolean mDisableHardwareAccelerated = false;
     private boolean mNeedsFullRedraw = true;
 
@@ -203,7 +200,7 @@ public class ImageEditor extends View {
     }
 
     public void addPoint(float x, float y, boolean isMove) {
-        if (mSelectedEntity == null && (findEntityAtPoint(x, y) == null || isMove)) {
+        if (measurementEntity == null && mSelectedEntity == null && (findEntityAtPoint(x, y) == null || isMove)) {
             Rect updateRect = mCurrentPath.addPoint(new PointF(x, y));
             if (mCurrentPath.isTranslucent) {
                 mTranslucentDrawingCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
@@ -722,8 +719,11 @@ public class ImageEditor extends View {
             case ARROW:
                 addArrowEntity();
                 break;
-            case RULER :
+            case RULER:
                 addRulerEntity();
+                break;
+            case MEASUREMENT_TOOL:
+                startMeasurementToolEntity();
                 break;
             case IMAGE:
                 // TODO: Doesn't exist yet
@@ -800,6 +800,18 @@ public class ImageEditor extends View {
         entity.moveCenterTo(center);
 
         invalidateCanvas(true);
+    }
+
+    private MeasureToolEntity measurementEntity;
+
+    protected void startMeasurementToolEntity() {
+        Layer layer = new Layer();
+        if (mSketchCanvas.getWidth() < 100 || mSketchCanvas.getHeight() < 100) {
+            measurementEntity = new MeasureToolEntity(layer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight());
+        } else {
+            measurementEntity = new MeasureToolEntity(layer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight());
+        }
+        addEntityAndPosition(measurementEntity);
     }
 
     protected void addSquareEntity(int width) {
@@ -1051,10 +1063,7 @@ public class ImageEditor extends View {
     private class TapsListener extends GestureDetector.SimpleOnGestureListener {
         @Override
         public boolean onDoubleTap(MotionEvent e) {
-            if (mSelectedEntity != null) {
-                return true;
-            }
-            return false;
+            return mSelectedEntity != null;
         }
 
         @Override
@@ -1065,9 +1074,20 @@ public class ImageEditor extends View {
 
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
-            // Update mSelectedEntity. 
-            // Fires onShapeSelectionChanged (JS-PanResponder enabling/disabling)
-            updateSelectionOnTap(e);
+            // handle adding items to measurement tool
+            if (measurementEntity != null) {
+                boolean result = measurementEntity.addPoint(e.getX(), e.getY());
+                if (result) {
+                    invalidateCanvas(true);
+                } else {
+                    measurementEntity = null;
+                    mSelectedEntity = null;
+                }
+            } else {
+                // Update mSelectedEntity.
+                // Fires onShapeSelectionChanged (JS-PanResponder enabling/disabling)
+                updateSelectionOnTap(e);
+            }
             return true;
         }
     }
@@ -1104,7 +1124,8 @@ public class ImageEditor extends View {
                 handleTranslate(detector.getFocusDelta());
                 return true;
             }
-            return false;
+            //                measurementEntity.handleTranslate(detector.getFocusDelta());
+            return measurementEntity != null;
         }
     }
 }
