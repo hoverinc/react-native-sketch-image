@@ -922,18 +922,23 @@ public class ImageEditor extends View {
 
     private void handleTranslate(PointF delta) {
         if (mSelectedEntity != null) {
-            float newCenterX = mSelectedEntity.absoluteCenterX() + delta.x;
-            float newCenterY = mSelectedEntity.absoluteCenterY() + delta.y;
 
-            // limit entity center to screen bounds
             boolean needUpdateUI = false;
-            if (newCenterX >= 0 && newCenterX <= getWidth()) {
-                mSelectedEntity.getLayer().postTranslate(delta.x / getWidth(), 0.0F);
-                needUpdateUI = true;
-            }
-            if (newCenterY >= 0 && newCenterY <= getHeight()) {
-                mSelectedEntity.getLayer().postTranslate(0.0F, delta.y / getHeight());
-                needUpdateUI = true;
+            if (mSelectedEntity instanceof MeasureToolEntity) {
+                needUpdateUI =  ((MeasureToolEntity) mSelectedEntity).handleTranslate(delta);
+            } else {
+                float newCenterX = mSelectedEntity.absoluteCenterX() + delta.x;
+                float newCenterY = mSelectedEntity.absoluteCenterY() + delta.y;
+
+                // limit entity center to screen bounds
+                if (newCenterX >= 0 && newCenterX <= getWidth()) {
+                    mSelectedEntity.getLayer().postTranslate(delta.x / getWidth(), 0.0F);
+                    needUpdateUI = true;
+                }
+                if (newCenterY >= 0 && newCenterY <= getHeight()) {
+                    mSelectedEntity.getLayer().postTranslate(0.0F, delta.y / getHeight());
+                    needUpdateUI = true;
+                }
             }
             if (needUpdateUI) {
                 invalidateCanvas(true);
@@ -961,9 +966,9 @@ public class ImageEditor extends View {
         MotionEntity selected = null;
         PointF p = new PointF(x, y);
         for (int i = mEntities.size() - 1; i >= 0; i--) {
-            if (mEntities.get(i).pointInLayerRect(p)) {
+            // Unselect previous selected items
+            if (mEntities.get(i).pointInLayerRect(p) && selected == null) {
                 selected = mEntities.get(i);
-                break;
             }
         }
         return selected;

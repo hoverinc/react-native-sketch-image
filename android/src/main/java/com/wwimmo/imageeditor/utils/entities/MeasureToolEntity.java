@@ -4,7 +4,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
 
@@ -18,18 +17,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MeasureToolEntity extends MotionEntity {
-    private int mWidth;
-    private int mHeight;
-    private float mBordersPadding;
+    private final int mWidth;
+    private final int mHeight;
+    private final float mBordersPadding;
     private float mStrokeWidth;
     private int mStrokeColor;
 
-    private Paint mArrowPaint;
-    private Bitmap mArrowBitmap;
-    private Canvas mArrowCanvas;
-    private List<PointF> currentPoints;
+    private Paint mPaint;
+    private Bitmap mBitmap;
+    private Canvas mCanvas;
+    private final List<PointF> currentPoints;
+    private PointF selectedPoint;
 
-    private static final int POINTS_COUNT = 3;
+    private static final int POINTS_COUNT = 2;
     private static final int MIN_POINTS_DISTANCE = 200;
     private static final int POINT_TOUCH_AREA = 100;
 
@@ -50,11 +50,11 @@ public class MeasureToolEntity extends MotionEntity {
     private void updateEntity(boolean moveToPreviousCenter) {
         configureArrowBitmap(null);
 
-        float width = this.mArrowBitmap.getWidth();
-        float height = this.mArrowBitmap.getHeight();
+        float width = this.mBitmap.getWidth();
+        float height = this.mBitmap.getHeight();
 
-        float widthAspect = 1.0F * canvasWidth / this.mArrowBitmap.getWidth();
-        float heightAspect = 1.0F * canvasHeight / this.mArrowBitmap.getHeight();
+        float widthAspect = 1.0F * canvasWidth / this.mBitmap.getWidth();
+        float heightAspect = 1.0F * canvasHeight / this.mBitmap.getHeight();
 
         // fit the smallest size
         holyScale = Math.min(widthAspect, heightAspect);
@@ -83,38 +83,36 @@ public class MeasureToolEntity extends MotionEntity {
 
     private void configureArrowBitmap(@Nullable Paint paint) {
         updatePaint(paint);
-        if (this.mArrowBitmap == null) {
-            this.mArrowBitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
-            this.mArrowCanvas = new Canvas(this.mArrowBitmap);
+        if (this.mBitmap == null) {
+            this.mBitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
+            this.mCanvas = new Canvas(this.mBitmap);
         }
-        this.mArrowCanvas.save();
-        this.mArrowCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-        float savedStrokeWidth  = mArrowPaint.getStrokeWidth();
+        this.mCanvas.save();
+        this.mCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+        float savedStrokeWidth = mPaint.getStrokeWidth();
         if (currentPoints.size() > 0) {
-            for (int i = 0; i < currentPoints.size(); i ++) {
+            for (int i = 0; i < currentPoints.size(); i++) {
                 PointF pointF = currentPoints.get(i);
-                this.drawPoint(pointF, mArrowPaint);
-                mArrowPaint.setStrokeWidth(savedStrokeWidth);
-                if (i > 0){
-                    PointF prevPointF = currentPoints.get(i -1);
-                    mArrowCanvas.drawLine(prevPointF.x, prevPointF.y, pointF.x, pointF.y, mArrowPaint);
+
+                if (pointF == selectedPoint) {
+                    // highlight point
+                    this.mPaint.setAlpha(100);
+                    this.mPaint.setStyle(Paint.Style.FILL);
+                    this.mCanvas.drawCircle(pointF.x, pointF.y, POINT_TOUCH_AREA, this.mPaint);
+                    this.mPaint.setAlpha(255);
                 }
+                if (i > 0) {
+                    // path between points
+                    PointF prevPointF = currentPoints.get(i - 1);
+                    mCanvas.drawLine(prevPointF.x, prevPointF.y, pointF.x, pointF.y, mPaint);
+                }
+                this.drawPoint(pointF, mPaint);
+                mPaint.setStrokeWidth(savedStrokeWidth);
+
             }
         }
 
-        this.mArrowCanvas.restore();
-    }
-
-    private void drawArrow() {
-        int halfWidth = mWidth / 2;
-        int halfHeight = mHeight / 2;
-        int sideLine  = mHeight / 8;
-
-        float centerX = getLayer().getX() + halfWidth;
-        float centerY = getLayer().getY() + halfHeight;
-
-
-        this.mArrowCanvas.drawCircle(centerX, centerY, 20, mArrowPaint);
+        this.mCanvas.restore();
     }
 
     private void updatePaint(@Nullable Paint paint) {
@@ -122,28 +120,28 @@ public class MeasureToolEntity extends MotionEntity {
             this.mStrokeColor = paint.getColor();
             this.mStrokeWidth = paint.getStrokeWidth();
         }
-        
-        this.mArrowPaint = new Paint();
-        this.mArrowPaint.setColor(this.mStrokeColor);
-        this.mArrowPaint.setStrokeWidth(this.mStrokeWidth / getLayer().getScale());
+
+        this.mPaint = new Paint();
+        this.mPaint.setColor(this.mStrokeColor);
+        this.mPaint.setStrokeWidth(this.mStrokeWidth / getLayer().getScale());
 
         // This is essential for the overlapping paths to not result in a weird artefact
-        this.mArrowPaint.setStrokeJoin(Paint.Join.BEVEL);
+        this.mPaint.setStrokeJoin(Paint.Join.BEVEL);
 
-        // TODO: Arrow Border gets pixelated because it's just done once (initially)!
-        this.mArrowPaint.setAntiAlias(true);
+        // TODO: border gets pixelated because it's just done once (initially)!
+        this.mPaint.setAntiAlias(true);
 
         // When scaling the ArrowShape the border gets pixelated, this helps a bit against it.
         // TODO: FIX THIS by somehow scaling the shape as well and not just the bitmap...
-        this.mArrowPaint.setFilterBitmap(true);
-        this.mArrowPaint.setDither(true);
-        this.mArrowPaint.setStyle(Paint.Style.STROKE);
+        this.mPaint.setFilterBitmap(true);
+        this.mPaint.setDither(true);
+        this.mPaint.setStyle(Paint.Style.STROKE);
     }
 
     @Override
     protected void drawContent(@NonNull Canvas canvas, @Nullable Paint drawingPaint) {
         configureArrowBitmap(drawingPaint);
-        canvas.drawBitmap(this.mArrowBitmap, matrix, this.mArrowPaint);
+        canvas.drawBitmap(this.mBitmap, matrix, this.mPaint);
     }
 
     @Override
@@ -168,8 +166,8 @@ public class MeasureToolEntity extends MotionEntity {
 
     @Override
     public void release() {
-        if (this.mArrowBitmap != null && !this.mArrowBitmap.isRecycled()) {
-            this.mArrowBitmap.recycle();
+        if (this.mBitmap != null && !this.mBitmap.isRecycled()) {
+            this.mBitmap.recycle();
         }
     }
 
@@ -184,16 +182,53 @@ public class MeasureToolEntity extends MotionEntity {
     private void drawPoint(PointF point, Paint paint) {
         float x = point.x;
         float y = point.y;
-        this.mArrowPaint.setStyle(Paint.Style.FILL);
-        this.mArrowCanvas.drawCircle(x, y, 16, paint);
+        this.mPaint.setStyle(Paint.Style.FILL);
+        this.mCanvas.drawCircle(x, y, 16, paint);
         paint.setStrokeWidth(2);
-        this.mArrowPaint.setStyle(Paint.Style.STROKE);
-        this.mArrowCanvas.drawCircle(x, y, 20, paint);
+        this.mPaint.setStyle(Paint.Style.STROKE);
+        this.mCanvas.drawCircle(x, y, 20, paint);
     }
+
 
     @Override
     public boolean pointInLayerRect(PointF point) {
-        // TOD add custom check
+        selectedPoint = getSelectedPointInArea(point);
+        return selectedPoint != null;
+    }
+
+    private PointF getSelectedPointInArea(PointF point) {
+        PointF selected = null;
+        for (int i = 0; i < currentPoints.size(); i++) {
+            PointF originPoint = currentPoints.get(i);
+            if (isInCircle(originPoint.x, originPoint.y, POINT_TOUCH_AREA, point.x, point.y)) {
+                selected = originPoint;
+            }
+        }
+        return selected;
+    }
+
+
+    public boolean handleTranslate(PointF delta) {
+        if (selectedPoint != null) {
+            float newX = selectedPoint.x + delta.x;
+            float newY = selectedPoint.y + delta.y;
+            boolean toCloseToOtherPoint = false;
+            for (int i = 0; i < currentPoints.size(); i++) {
+                PointF originPoint = currentPoints.get(i);
+                if (originPoint != selectedPoint && isInCircle(originPoint.x, originPoint.y, POINT_TOUCH_AREA, newX, newY)) {
+                    toCloseToOtherPoint = true;
+                    break;
+                }
+            }
+            if (!toCloseToOtherPoint) {
+                selectedPoint.set(newX, newY);
+            }
+            return true;
+        }
         return false;
+    }
+
+    private boolean isInCircle(float x, float y, float radius, float touchX, float touchY) {
+        return (Math.pow(x - touchX, 2) + Math.pow(y - touchY, 2) <= Math.pow(radius, 2));
     }
 }
