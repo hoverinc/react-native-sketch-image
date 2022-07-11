@@ -700,6 +700,11 @@ public class ImageEditor extends View {
      * MotionEntities related code
      **/
     public void addEntity(EntityType shapeType, String textShapeFontType, int textShapeFontSize, String textShapeText, String imageShapeAsset) {
+        if (measurementEntity != null) {
+            mEntities.remove(measurementEntity);
+            measurementEntity = null;
+            mSelectedEntity = null;
+        }
         switch (shapeType) {
             case CIRCLE:
                 addCircleEntity();
