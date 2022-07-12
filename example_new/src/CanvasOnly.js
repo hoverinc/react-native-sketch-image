@@ -38,11 +38,11 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
         strokeColor={state.color}
         strokeWidth={state.thickness}
         onStrokeStart={(x, y) => {
-          console.log("x: ", x, ", y: ", y);
+          console.log("onStrokeStart", "x: ", x, ", y: ", y);
           setState({ message: "Start" });
         }}
         onStrokeChanged={(x, y) => {
-          console.log("x: ", x, ", y: ", y);
+          console.log("onStrokeChanged", "x: ", x, ", y: ", y);
           setState({ message: "Changed" });
         }}
         onStrokeEnd={() => {
@@ -50,6 +50,10 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
         }}
         onPathsChange={(pathsCount) => {
           console.log("pathsCount", pathsCount);
+        }}
+        touchEnabled={true}
+        onShapeSelectionChanged={v => {
+          console.log('onShapeSelectionChanged', v)
         }}
       />
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>

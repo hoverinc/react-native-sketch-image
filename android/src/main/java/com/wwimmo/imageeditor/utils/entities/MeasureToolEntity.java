@@ -174,7 +174,7 @@ public class MeasureToolEntity extends MotionEntity {
     public boolean addPoint(float x, float y) {
         if (currentPoints.size() < POINTS_COUNT) {
             currentPoints.add(new PointF(x, y));
-            return true;
+            return currentPoints.size() < POINTS_COUNT;
         }
         return false;
     }

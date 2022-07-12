@@ -1086,12 +1086,13 @@ public class ImageEditor extends View {
         public boolean onSingleTapUp(MotionEvent e) {
             // handle adding items to measurement tool
             if (measurementEntity != null) {
-                boolean result = measurementEntity.addPoint(e.getX(), e.getY());
-                if (result) {
+                boolean inProgress = measurementEntity.addPoint(e.getX(), e.getY());
+                if (inProgress) {
                     invalidateCanvas(true);
                 } else {
                     measurementEntity = null;
-                    mSelectedEntity = null;
+                    selectEntity(null);
+                    onShapeSelectionChanged(null);
                 }
             } else {
                 // Update mSelectedEntity.
