@@ -14,6 +14,7 @@
 #import "entities/ArrowEntity.h"
 #import "entities/TextEntity.h"
 #import "entities/RulerEntity.h"
+#import "entities/MeasurementEntity.h"
 
 @implementation RNImageEditor
 {
@@ -598,7 +599,7 @@
 
 - (void)addEntity:(NSString *)entityType textShapeFontType:(NSString *)textShapeFontType textShapeFontSize:(NSNumber *)textShapeFontSize textShapeText:(NSString *)textShapeText imageShapeAsset:(NSString *)imageShapeAsset {
 
-    switch ([@[@"Circle", @"Rect", @"Square", @"Triangle", @"Arrow", @"Text", @"Image", @"Ruler"] indexOfObject: entityType]) {
+    switch ([@[@"Circle", @"Rect", @"Square", @"Triangle", @"Arrow", @"Text", @"Image", @"Ruler", @"MeasurementTool"] indexOfObject: entityType]) {
         case 1:
             [self addRectEntity:300 andHeight:150];
             break;
@@ -619,6 +620,9 @@
             break;
         case 7:
             [self addRulerEntity];
+            break;
+        case 8:
+            [self addMeasurementEntity];
             break;
         case 0:
         case NSNotFound:
@@ -749,6 +753,32 @@
     [self selectEntity:entity];
 }
 
+- (void)addMeasurementEntity {
+    CGFloat centerX = CGRectGetMidX(self.bounds);
+    CGFloat centerY = CGRectGetMidY(self.bounds);
+
+    MeasurementEntity *entity = [[MeasurementEntity alloc]
+                              initAndSetupWithParent:self.bounds.size.width
+                              parentHeight:self.bounds.size.height
+                              parentCenterX:centerX
+                              parentCenterY:centerY
+                              parentScreenScale:self.window.screen.scale
+                              width:self.bounds.size.width
+                              height:self.bounds.size.height
+                              bordersPadding:5.0f
+                              borderStyle:self.entityBorderStyle
+                              borderStrokeWidth:self.entityBorderStrokeWidth
+                              borderStrokeColor:self.entityBorderColor
+                              entityStrokeWidth:self.entityStrokeWidth
+                              entityStrokeColor:self.entityStrokeColor];
+
+    _measurementEntity = entity;
+    [self.motionEntities addObject:entity];
+    [self onShapeSelectionChanged:entity];
+    [self selectEntity:entity];
+}
+
+
 - (void)addTextEntity:(NSString *)fontType withFontSize: (NSNumber *)fontSize withText: (NSString *)text {
     CGFloat centerX = CGRectGetMidX(self.bounds);
     CGFloat centerY = CGRectGetMidY(self.bounds);
@@ -865,7 +895,17 @@
 - (void)handleTap:(UITapGestureRecognizer *)sender {
     if (sender.state == UIGestureRecognizerStateEnded) {
         CGPoint tapLocation = [sender locationInView:sender.view];
-        [self updateSelectionOnTapWithLocationPoint:tapLocation];
+        if (_measurementEntity != nil) {
+            bool inProgress = [_measurementEntity addPoint:tapLocation];
+            [_measurementEntity setNeedsDisplay];
+            if (!inProgress) {
+                _measurementEntity = nil;
+                [self unselectShape];
+                [self onShapeSelectionChanged:nil];
+            }
+        } else {
+            [self updateSelectionOnTapWithLocationPoint:tapLocation];
+        }
     }
 }
 

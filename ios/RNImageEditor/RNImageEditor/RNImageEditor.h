@@ -1,6 +1,7 @@
 #import <UIKit/UIKit.h>
 #import "entities/base/Enumerations.h"
 #import "entities/base/MotionEntity.h"
+#import "entities/MeasurementEntity.h"
 
 @class RCTEventDispatcher;
 
@@ -9,6 +10,7 @@
 @property (nonatomic, copy) RCTBubblingEventBlock onChange;
 @property (nonatomic) NSMutableArray<MotionEntity *> *motionEntities;
 @property (nonatomic) MotionEntity *selectedEntity;
+@property (nonatomic) MeasurementEntity *measurementEntity;
 @property (nonatomic) UIColor *entityBorderColor;
 @property (nonatomic) enum BorderStyle entityBorderStyle;
 @property (nonatomic) CGFloat entityBorderStrokeWidth;
