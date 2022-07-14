@@ -13,8 +13,6 @@
                          parentCenterX: (CGFloat)parentCenterX
                          parentCenterY: (CGFloat)parentCenterY
                      parentScreenScale: (CGFloat)parentScreenScale
-                                 width: (NSInteger)width
-                                height: (NSInteger)height
                         bordersPadding: (CGFloat)bordersPadding
                            borderStyle: (enum BorderStyle)borderStyle
                      borderStrokeWidth: (CGFloat)borderStrokeWidth

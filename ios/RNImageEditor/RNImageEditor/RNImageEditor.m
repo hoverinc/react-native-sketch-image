@@ -763,8 +763,6 @@
                               parentCenterX:centerX
                               parentCenterY:centerY
                               parentScreenScale:self.window.screen.scale
-                              width:self.bounds.size.width
-                              height:self.bounds.size.height
                               bordersPadding:5.0f
                               borderStyle:self.entityBorderStyle
                               borderStrokeWidth:self.entityBorderStrokeWidth
@@ -912,7 +910,7 @@
 - (void)handleRotate:(UIRotationGestureRecognizer *)sender {
     UIGestureRecognizerState state = [sender state];
     if (state == UIGestureRecognizerStateBegan || state == UIGestureRecognizerStateChanged) {
-        if (self.selectedEntity) {
+        if (self.selectedEntity && _measurementEntity == nil) {
             [self.selectedEntity rotateEntityBy:sender.rotation];
             [self setNeedsDisplayInRect:self.selectedEntity.bounds];
         }
@@ -922,7 +920,7 @@
 
 - (void)handleMove:(UIPanGestureRecognizer *)sender {
     UIGestureRecognizerState state = [sender state];
-    if (self.selectedEntity) {
+    if (self.selectedEntity && _measurementEntity == nil) {
         if (state != UIGestureRecognizerStateCancelled) {
             [self.selectedEntity moveEntityTo:[sender translationInView:self.selectedEntity]];
             [sender setTranslation:CGPointZero inView:sender.view];
@@ -934,7 +932,7 @@
 - (void)handleScale:(UIPinchGestureRecognizer *)sender {
     UIGestureRecognizerState state = [sender state];
     if (state == UIGestureRecognizerStateBegan || state == UIGestureRecognizerStateChanged) {
-        if (self.selectedEntity) {
+        if (self.selectedEntity && _measurementEntity == nil) {
             [self.selectedEntity scaleEntityBy:sender.scale];
             [self setNeedsDisplayInRect:self.selectedEntity.bounds];
         }
