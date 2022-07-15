@@ -13,14 +13,13 @@ import androidx.annotation.Nullable;
 
 import com.wwimmo.imageeditor.utils.layers.Layer;
 
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MeasureToolEntity extends MotionEntity {
     private final int mWidth;
     private final int mHeight;
-    private final float mBordersPadding;
-    private float mStrokeWidth;
     private int mStrokeColor;
 
     private Paint mPaint;
@@ -30,8 +29,11 @@ public class MeasureToolEntity extends MotionEntity {
     private PointF selectedPoint;
 
     private static final int POINTS_COUNT = 2;
-    private static final int MIN_POINTS_DISTANCE = 200;
     private static final int POINT_TOUCH_AREA = 100;
+    private static final int INNER_RADIUS = 14;
+    private static final int OUTER_RADIUS = 22;
+    private static final int OUTER_RADIUS_CONNECTION = OUTER_RADIUS - 1;
+    private static final int STROKE_WIDTH = 4;
 
     public MeasureToolEntity(@NonNull Layer layer,
                              @IntRange(from = 1) int canvasWidth,
@@ -40,8 +42,6 @@ public class MeasureToolEntity extends MotionEntity {
 
         this.mWidth = canvasWidth;
         this.mHeight = canvasHeight;
-        this.mStrokeWidth = 5;
-        this.mBordersPadding = 10;
         this.mStrokeColor = Color.BLACK;
         currentPoints = new ArrayList<>();
         updateEntity(false);
@@ -104,7 +104,7 @@ public class MeasureToolEntity extends MotionEntity {
                 if (i > 0) {
                     // path between points
                     PointF prevPointF = currentPoints.get(i - 1);
-                    mCanvas.drawLine(prevPointF.x, prevPointF.y, pointF.x, pointF.y, mPaint);
+                    drawConnection(prevPointF, pointF);
                 }
                 this.drawPoint(pointF, mPaint);
                 mPaint.setStrokeWidth(savedStrokeWidth);
@@ -115,15 +115,49 @@ public class MeasureToolEntity extends MotionEntity {
         this.mCanvas.restore();
     }
 
+    private double distance(float x1, float y1, float x2, float y2) {
+        return Math.hypot(x2 - x1, y2 - y1);
+    }
+
+    private PointF getOuterRadiusPoint( PointF startPoint, PointF endPoint, float radius) {
+        // Build triangle
+        double a = distance(startPoint.x, startPoint.y, endPoint.x, startPoint.y);
+        double b = distance(endPoint.x, endPoint.y, endPoint.x, startPoint.y);
+
+        float diffX = endPoint.x - startPoint.x;
+        float diffY = endPoint.y - startPoint.y;
+        double theta;
+        // get the correct angle depends on points positions
+        if (diffX <= 0 && diffY <= 0) {
+            theta = Math.PI + Math.atan(b/a);
+        }else if (diffX > 0 && diffY <= 0) {
+            theta =  - Math.atan(b/a);
+        } else if (diffX <= 0 && diffY > 0){
+            theta = Math.PI - Math.atan(b/a);
+        } else {
+            theta = Math.atan(b/a);
+        }
+
+        float x = (float)  (startPoint.x + radius * Math.cos(theta));
+        float y = (float)  (startPoint.y + radius * Math.sin(theta));
+        // TODO done in the same way as iOS but could be reduced amount of created object if
+        // use directly
+        return new PointF(x, y);
+    }
+
+    private void drawConnection(PointF startPoint, PointF endPoint) {
+        PointF newEnd = getOuterRadiusPoint(endPoint, startPoint, OUTER_RADIUS_CONNECTION);
+        PointF newStart = getOuterRadiusPoint(startPoint, endPoint, OUTER_RADIUS_CONNECTION);
+        mCanvas.drawLine(newStart.x, newStart.y, newEnd.x, newEnd.y, mPaint);
+    }
+
     private void updatePaint(@Nullable Paint paint) {
         if (paint != null && isSelected()) {
             this.mStrokeColor = paint.getColor();
-            this.mStrokeWidth = paint.getStrokeWidth();
         }
 
         this.mPaint = new Paint();
         this.mPaint.setColor(this.mStrokeColor);
-        this.mPaint.setStrokeWidth(this.mStrokeWidth / getLayer().getScale());
 
         // This is essential for the overlapping paths to not result in a weird artefact
         this.mPaint.setStrokeJoin(Paint.Join.BEVEL);
@@ -136,6 +170,7 @@ public class MeasureToolEntity extends MotionEntity {
         this.mPaint.setFilterBitmap(true);
         this.mPaint.setDither(true);
         this.mPaint.setStyle(Paint.Style.STROKE);
+        this.mPaint.setStrokeWidth(STROKE_WIDTH);
     }
 
     @Override
@@ -183,10 +218,9 @@ public class MeasureToolEntity extends MotionEntity {
         float x = point.x;
         float y = point.y;
         this.mPaint.setStyle(Paint.Style.FILL);
-        this.mCanvas.drawCircle(x, y, 16, paint);
-        paint.setStrokeWidth(2);
+        this.mCanvas.drawCircle(x, y, INNER_RADIUS, paint);
         this.mPaint.setStyle(Paint.Style.STROKE);
-        this.mCanvas.drawCircle(x, y, 20, paint);
+        this.mCanvas.drawCircle(x, y, OUTER_RADIUS, paint);
     }
 
 
