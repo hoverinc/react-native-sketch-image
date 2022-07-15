@@ -69,7 +69,7 @@ int selectedPosition;
                 CGContextFillEllipseInRect(contextRef, highlightCircleRect);
                 CGContextSetAlpha(contextRef, 1);
             }
-            
+
             // draw line between points
             if (i > 0) {
                 NSValue *preVal = [points objectAtIndex:i - 1];
@@ -134,11 +134,11 @@ int selectedPosition;
     return hypot((x2 - x1), (y2 -y1));
 }
 
-- (CGPoint)getOuterRadiusPoint:(CGPoint)startPoint withEndPoint:(CGPoint)endPoint withRaidus:(float) raius {
+- (CGPoint)getOuterRadiusPoint:(CGPoint)startPoint withEndPoint:(CGPoint)endPoint withRadius:(float) radius {
     // Build triangle
     double a = [self distance:startPoint.x withY:startPoint.y withX2:endPoint.x withY2:startPoint.y];
     double b = [self distance:endPoint.x withY:endPoint.y withX2:endPoint.x withY2:startPoint.y];
-    
+
     float diffX = endPoint.x - startPoint.x;
     float diffY = endPoint.y - startPoint.y;
     float thetaDiff = 0;
@@ -153,17 +153,17 @@ int selectedPosition;
     } else {
         theta = atan(b/a);
     }
-    
-    float x = startPoint.x + raius * cos(theta);
-    float y = startPoint.y + raius * sin(theta);
+
+    float x = startPoint.x + radius * cos(theta);
+    float y = startPoint.y + radius * sin(theta);
     return CGPointMake(x, y);
 }
 
 - (void)drawConnection:(CGContextRef)contextRef withStartPoint:(CGPoint)startPoint withEndPoint:(CGPoint)endPoint {
     CGContextSetLineWidth(contextRef, 2);
-    CGPoint newStart = [self getOuterRadiusPoint:startPoint withEndPoint:endPoint withRaidus:10];
-    CGPoint newEnd = [self getOuterRadiusPoint:endPoint withEndPoint:startPoint withRaidus:10];
-    
+    CGPoint newStart = [self getOuterRadiusPoint:startPoint withEndPoint:endPoint withRadius:10];
+    CGPoint newEnd = [self getOuterRadiusPoint:endPoint withEndPoint:startPoint withRadius:10];
+
     CGContextBeginPath(contextRef);
     CGContextMoveToPoint(contextRef, newStart.x, newStart.y);
     CGContextAddLineToPoint(contextRef, newEnd.x, newEnd.y);
@@ -178,7 +178,7 @@ int selectedPosition;
     CGContextSetLineWidth(contextRef, 2);
     CGContextSetStrokeColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
     CGContextStrokeEllipseInRect(contextRef, circleRect);
-    
+
     circleRect = [self buildRect:point withSize:pointSize];
     circleRect = CGRectInset(circleRect, 6 , 6);
     CGContextSetFillColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
