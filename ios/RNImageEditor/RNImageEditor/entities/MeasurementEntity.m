@@ -13,7 +13,7 @@
     NSMutableArray *points;
 }
 
-int MAX_POINTS_COUNT = 3;
+int MAX_POINTS_COUNT = 2;
 int DEFAULT_SELECTED_POSITION = -1;
 float pointSize = 22;
 float touchPointSize = 50;
@@ -130,12 +130,43 @@ int selectedPosition;
 }
 
 
+-(double)distance:(float)x1 withY:(float)y1 withX2:(float)x2 withY2:(float)y2 {
+    return hypot((x2 - x1), (y2 -y1));
+}
+
+- (CGPoint)getOuterRadiusPoint:(CGPoint)startPoint withEndPoint:(CGPoint)endPoint withRaidus:(float) raius {
+    // Build triangle
+    double a = [self distance:startPoint.x withY:startPoint.y withX2:endPoint.x withY2:startPoint.y];
+    double b = [self distance:endPoint.x withY:endPoint.y withX2:endPoint.x withY2:startPoint.y];
+    
+    float diffX = endPoint.x - startPoint.x;
+    float diffY = endPoint.y - startPoint.y;
+    float thetaDiff = 0;
+    double theta;
+    // get the correct angle depends on points positions
+    if (diffX <= 0 && diffY <= 0) {
+        theta = M_PI + atan(b/a);
+    }else if (diffX > 0 && diffY <= 0) {
+        theta =  - atan(b/a);
+    } else if (diffX <= 0 && diffY > 0){
+        theta = M_PI - atan(b/a);
+    } else {
+        theta = atan(b/a);
+    }
+    
+    float x = startPoint.x + raius * cos(theta);
+    float y = startPoint.y + raius * sin(theta);
+    return CGPointMake(x, y);
+}
+
 - (void)drawConnection:(CGContextRef)contextRef withStartPoint:(CGPoint)startPoint withEndPoint:(CGPoint)endPoint {
     CGContextSetLineWidth(contextRef, 2);
+    CGPoint newStart = [self getOuterRadiusPoint:startPoint withEndPoint:endPoint withRaidus:10];
+    CGPoint newEnd = [self getOuterRadiusPoint:endPoint withEndPoint:startPoint withRaidus:10];
     
     CGContextBeginPath(contextRef);
-    CGContextMoveToPoint(contextRef, startPoint.x, startPoint.y);
-    CGContextAddLineToPoint(contextRef, endPoint.x, endPoint.y);
+    CGContextMoveToPoint(contextRef, newStart.x, newStart.y);
+    CGContextAddLineToPoint(contextRef, newEnd.x, newEnd.y);
     CGContextStrokePath(contextRef);
 }
 
