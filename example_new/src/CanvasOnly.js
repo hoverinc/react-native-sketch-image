@@ -19,6 +19,11 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
             <Text style={{ color: "white" }}>Tool</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.functionButton} onPress={() => {
+            canvas.current.addShape({ shapeType: "Text", textShapeText : 'WWW' });
+          }}>
+            <Text style={{ color: "white" }}>Text</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.functionButton} onPress={() => {
             setState({ thickness: 10 });
           }}>
             <Text style={{ color: "white" }}>Thick</Text>
@@ -67,6 +72,12 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
             setState({ color: "#000000" });
           }}>
             <Text style={{ color: "white" }}>Black</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.functionButton, { backgroundColor: "blue" }]} onPress={() => {
+            canvas.current.undo();
+          }}>
+            <Text style={{ color: "white" }}>Undo</Text>
           </TouchableOpacity>
         </View>
         <Text style={{ marginRight: 8, fontSize: 20 }}>{state.message}</Text>

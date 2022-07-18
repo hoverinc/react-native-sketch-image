@@ -4,21 +4,29 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.PointF;
-import androidx.annotation.IntRange;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+
+import androidx.annotation.IntRange;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.wwimmo.imageeditor.utils.layers.TextLayer;
 
 public class TextEntity extends MotionEntity {
 
+    private static final int CORNER_RADIUS = 8;
+    private static final int BORDER_WIDTH = 1;
+    private static final int BORDER_PADDING = 16;
+    private static final int BORDER_COLOR = Color.parseColor("#1B5FA7");
     private final TextPaint textPaint;
     @Nullable
     private Bitmap bitmap;
+    private final Paint backgroundPaint;
+
 
     public TextEntity(@NonNull TextLayer textLayer,
                       @IntRange(from = 1) int canvasWidth,
@@ -26,6 +34,7 @@ public class TextEntity extends MotionEntity {
         super(textLayer, canvasWidth, canvasHeight);
 
         this.textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        this.backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         updateEntity(false);
     }
@@ -89,7 +98,6 @@ public class TextEntity extends MotionEntity {
                 1, // 1 - text spacing multiply
                 1, // 1 - text spacing add
                 true); // true - include padding
-
         // calculate height for the entity, min - Limits.MIN_BITMAP_HEIGHT
         int boundsHeight = sl.getHeight();
 
@@ -119,11 +127,34 @@ public class TextEntity extends MotionEntity {
             canvas.translate(0, textYCoordinate);
         }
 
+        // draw background
+        Rect textRect = new Rect();
+        textPaint.getTextBounds(layer.getText(), 0, layer.getText().length(), textRect);
+        // Add padding and centring
+        int startX = Math.max ((boundsWidth - textRect.width()) / 2 - BORDER_PADDING, 0);
+        int startY = BORDER_PADDING;
+        int endX = Math.min(startX + textRect.width() + 2 * BORDER_PADDING, boundsWidth);
+        int endY = Math.min(startY + boundsHeight , boundsHeight);
+        RectF backgroundRect = new RectF(startX, startY, endX, endY);
+        drawBackground(canvas, backgroundRect);
+
         //draws static layout on canvas
         sl.draw(canvas);
         canvas.restore();
 
         return bmp;
+    }
+
+    private void drawBackground(Canvas canvas, RectF rectF) {
+        this.backgroundPaint.setColor(Color.WHITE);
+        this.backgroundPaint.setStyle(Paint.Style.FILL);
+        canvas.drawRoundRect(rectF, CORNER_RADIUS, CORNER_RADIUS, backgroundPaint);
+        this.backgroundPaint.setStyle(Paint.Style.STROKE);
+        this.backgroundPaint.setColor(BORDER_COLOR);
+        this.backgroundPaint.setStrokeWidth(BORDER_WIDTH);
+        this.backgroundPaint.setStrokeCap(Paint.Cap.ROUND);
+        canvas.drawRoundRect(rectF, CORNER_RADIUS, CORNER_RADIUS, backgroundPaint);
+
     }
 
     private void updatePaint(@Nullable Paint paint) {
