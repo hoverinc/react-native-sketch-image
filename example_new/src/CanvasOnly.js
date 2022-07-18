@@ -75,7 +75,7 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.functionButton, { backgroundColor: "blue" }]} onPress={() => {
-            canvas.current.undo();
+            canvas.current.undoShape();
           }}>
             <Text style={{ color: "white" }}>Undo</Text>
           </TouchableOpacity>

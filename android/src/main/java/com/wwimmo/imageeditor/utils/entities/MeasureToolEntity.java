@@ -265,4 +265,18 @@ public class MeasureToolEntity extends MotionEntity {
     private boolean isInCircle(float x, float y, float radius, float touchX, float touchY) {
         return (Math.pow(x - touchX, 2) + Math.pow(y - touchY, 2) <= Math.pow(radius, 2));
     }
+
+    @Override
+    public boolean undo() {
+        if (currentPoints.size() > 0 ) {
+            int lastIndex = currentPoints.size() - 1;
+            PointF last = currentPoints.get(lastIndex);
+            if (last == selectedPoint) {
+                selectedPoint = null;
+            }
+            currentPoints.remove(lastIndex);
+            return  currentPoints.size() > 0;
+        }
+        return false;
+    }
 }

@@ -268,6 +268,14 @@ public abstract class MotionEntity {
         // free resources here
     }
 
+    /**
+     * Execute undo operation on the entity if possible. By default return false.
+     * @return true in case of event handled; false - otherwise, entity could be removed;
+     */
+    public boolean undo() {
+        return  false;
+    }
+
     @Override
     protected void finalize() throws Throwable {
         try {

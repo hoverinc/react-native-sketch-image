@@ -115,6 +115,7 @@ export interface ImageEditorProps {
 export class ImageEditor extends React.Component<ImageEditorProps & ViewProperties> {
     clear(): void;
     undo(): number;
+    undoShape(): number;
     addPath(data: Path): void;
     deletePath(id: number): void;
     addShape(config: AddShapeConfig): void;

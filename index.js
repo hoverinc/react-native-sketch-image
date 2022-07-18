@@ -160,6 +160,10 @@ export default class RNImageEditor extends React.Component {
         return this._sketchCanvas.undo();
     }
 
+    undoShape() {
+        return this._sketchCanvas.undoShape();
+    }
+
     addPath(data) {
         this._sketchCanvas.addPath(data);
     }

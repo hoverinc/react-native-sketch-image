@@ -155,6 +155,14 @@ class ImageEditor extends React.Component {
         );
     }
 
+    undoShape() {
+        UIManager.dispatchViewManagerCommand(
+          this._handle,
+          UIManager.getViewManagerConfig(RNImageEditor).Commands.undoShape,
+          []
+        );
+    }
+
     undo() {
         let lastId = -1;
         this._paths.forEach((d) => (lastId = d.drawer === this.props.user ? d.path.id : lastId));

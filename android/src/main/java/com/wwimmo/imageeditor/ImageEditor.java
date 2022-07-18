@@ -83,6 +83,7 @@ public class ImageEditor extends View {
     // Shapes/Entities
     private final ArrayList<MotionEntity> mEntities = new ArrayList<MotionEntity>();
     private MotionEntity mSelectedEntity;
+    private MeasureToolEntity measurementEntity;
     private int mEntityBorderColor = Color.TRANSPARENT;
     private BorderStyle mEntityBorderStyle = BorderStyle.DASHED;
     private float mEntityBorderStrokeWidth = 1;
@@ -807,8 +808,6 @@ public class ImageEditor extends View {
         invalidateCanvas(true);
     }
 
-    private MeasureToolEntity measurementEntity;
-
     protected void startMeasurementToolEntity() {
         Layer layer = new Layer();
         if (mSketchCanvas.getWidth() < 100 || mSketchCanvas.getHeight() < 100) {
@@ -993,21 +992,50 @@ public class ImageEditor extends View {
                 break;
             }
         }
-        if (toRemoveEntity != null) {
-            toRemoveEntity.setIsSelected(false);
-            if (mEntities.remove(toRemoveEntity)) {
-                toRemoveEntity.release();
-                toRemoveEntity = null;
-                mSelectedEntity = toRemoveEntity;
-                onShapeSelectionChanged(toRemoveEntity);
-                invalidateCanvas(true);
-            }
-        }
+        deleteShape(toRemoveEntity);
     }
 
     public void unselectShape() {
         selectEntity(null);
     }
+
+    private void clearCurrentShape() {
+        measurementEntity = null;
+        selectEntity(null);
+        onShapeSelectionChanged(null);
+    }
+
+    private void deleteShape(MotionEntity toRemoveEntity) {
+        if (toRemoveEntity != null) {
+            measurementEntity = null;
+            toRemoveEntity.setIsSelected(false);
+            if (mEntities.remove(toRemoveEntity)) {
+                toRemoveEntity.release();
+                mSelectedEntity = null;
+                onShapeSelectionChanged(null);
+                invalidateCanvas(true);
+            }
+        }
+    }
+
+    public void undo() {
+        MotionEntity toRemove = null;
+        if (mSelectedEntity == null) {
+            if (mEntities.size() > 0) {
+                toRemove = mEntities.get(mEntities.size() - 1);
+            }
+        } else {
+            toRemove =  mSelectedEntity;
+        }
+        if (toRemove != null) {
+            if (!toRemove.undo()) {
+                deleteShape(toRemove);
+            } else {
+                invalidateCanvas(true);
+            }
+        }
+    }
+
 
     public void increaseTextEntityFontSize() {
         TextEntity textEntity = getSelectedTextEntity();
@@ -1090,9 +1118,7 @@ public class ImageEditor extends View {
                 if (inProgress) {
                     invalidateCanvas(true);
                 } else {
-                    measurementEntity = null;
-                    selectEntity(null);
-                    onShapeSelectionChanged(null);
+                    clearCurrentShape();
                 }
             } else {
                 // Update mSelectedEntity.

@@ -26,12 +26,10 @@ public class ImageEditorModule extends ReactContextBaseJavaModule {
         try {
             final ReactApplicationContext context = getReactApplicationContext();
             UIManagerModule uiManager = context.getNativeModule(UIManagerModule.class);
-            uiManager.addUIBlock(new UIBlock() {
-                public void execute(NativeViewHierarchyManager nvhm) {
-                    ImageEditor view = (ImageEditor) nvhm.resolveView(tag);
-                    String base64 = view.getBase64(type, transparent, includeImage, includeText, cropToImageSize);
-                    callback.invoke(null, base64);
-                }
+            uiManager.addUIBlock(nvhm -> {
+                ImageEditor view = (ImageEditor) nvhm.resolveView(tag);
+                String base64 = view.getBase64(type, transparent, includeImage, includeText, cropToImageSize);
+                callback.invoke(null, base64);
             });
         } catch (Exception e) {
             callback.invoke(e.getMessage(), null);
