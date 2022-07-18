@@ -12,7 +12,7 @@
   "dependencies": {
     "react": "17.0.2",
     "react-native": "0.68.2",
-    "@hoverinc/react-native-sketch-canvas": "https://github.com/hoverinc/react-native-sketch-image#689c48d8d4a0dba271afe2b64f5c8c565ec416a1",
+    "@hoverinc/react-native-sketch-canvas": "https://github.com/hoverinc/react-native-sketch-image#4e4b8e9262d9b77b319cf212d6f07d170a35cabf",
     "react-native-camera": "https://github.com/react-native-camera/react-native-camera#7cdfb6ec127decf1ac5686635afb7f07557becc5"
   },
   "devDependencies": {

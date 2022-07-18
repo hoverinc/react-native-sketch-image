@@ -19,7 +19,7 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
             <Text style={{ color: "white" }}>Tool</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.functionButton} onPress={() => {
-            canvas.current.addShape({ shapeType: "Text", textShapeText : 'WWW' });
+            canvas.current.addShape({ shapeType: "Text", textShapeText : 'WWW', textShapeFontSize: 20 });
           }}>
             <Text style={{ color: "white" }}>Text</Text>
           </TouchableOpacity>

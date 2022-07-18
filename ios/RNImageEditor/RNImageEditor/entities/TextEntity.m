@@ -13,6 +13,8 @@
 {
 }
 
+NSString * BORDER_COLOR = @"#1B5FA7";
+
 - (instancetype)initAndSetupWithParent: (NSInteger)parentWidth
                           parentHeight: (NSInteger)parentHeight
                          parentCenterX: (CGFloat)parentCenterX
@@ -27,7 +29,7 @@
                      borderStrokeColor: (UIColor *)borderStrokeColor
                      entityStrokeWidth: (CGFloat)entityStrokeWidth
                      entityStrokeColor: (UIColor *)entityStrokeColor {
-    
+
     // Let's calculate the initial texts single line width here
     NSMutableParagraphStyle *style = [[NSParagraphStyle defaultParagraphStyle] mutableCopy];
     [style setAlignment:NSTextAlignmentCenter];
@@ -48,7 +50,7 @@
     CGFloat realParentCenterX = parentCenterX - (initialTextRect.size.width + bordersPadding * 2) / 2;
     CGFloat realParentCenterY = parentCenterY - initialTextRect.size.height / 4;
 
-    
+
     self = [super initAndSetupWithParent:parentWidth
                             parentHeight:parentHeight
                            parentCenterX:realParentCenterX
@@ -62,7 +64,7 @@
                        borderStrokeColor:borderStrokeColor
                        entityStrokeWidth:entityStrokeWidth
                        entityStrokeColor:entityStrokeColor];
-    
+
     if (self) {
         self.MIN_SCALE = 0.3f;
         self.text = text;
@@ -81,14 +83,14 @@
                                 NSForegroundColorAttributeName: self.entityStrokeColor,
                                 NSParagraphStyleAttributeName: self.style
                                 };
-        
+
         CGRect textRect = [self.text boundingRectWithSize:CGSizeMake(self.bounds.size.width, CGFLOAT_MAX)
                                                   options:NSStringDrawingUsesLineFragmentOrigin
                                                attributes:self.textAttributes
                                                   context:nil];
         self.textSize = textRect.size;
     }
-    
+
     return self;
 }
 
@@ -114,15 +116,35 @@
     }
 }
 
+// Assumes input like "#00FF00" (#RRGGBB).
+- (UIColor *)colorFromHexString:(NSString *)hexString {
+    unsigned rgbValue = 0;
+    NSScanner *scanner = [NSScanner scannerWithString:hexString];
+    [scanner setScanLocation:1]; // bypass '#' character
+    [scanner scanHexInt:&rgbValue];
+    return [UIColor colorWithRed:((rgbValue & 0xFF0000) >> 16)/255.0 green:((rgbValue & 0xFF00) >> 8)/255.0 blue:(rgbValue & 0xFF)/255.0 alpha:1.0];
+}
+
 - (void)drawContent:(CGRect)rect withinContext:(CGContextRef)contextRef {
     self.textAttributes = @{
                             NSFontAttributeName: self.font,
                             NSForegroundColorAttributeName: self.entityStrokeColor,
                             NSParagraphStyleAttributeName: self.style
                             };
-    
+
     UIGraphicsBeginImageContextWithOptions(rect.size, NO, self.parentScreenScale * self.scale); // This (self.parentScreenScale * self.scale) fixes blurry text when scaling
     CGRect textRect = CGRectMake(rect.origin.x, rect.origin.y + (rect.size.height - self.textSize.height) / 2.0, rect.size.width, self.textSize.height);
+
+    // draw background
+    UIBezierPath *roundedRect = [UIBezierPath bezierPathWithRoundedRect:textRect cornerRadius: 4];
+    [roundedRect fillWithBlendMode: kCGBlendModeNormal alpha:1.0f];
+
+    [[UIColor whiteColor] setFill];
+    [roundedRect fill];
+    [[self colorFromHexString:BORDER_COLOR] setStroke];
+    [roundedRect stroke];
+
+
     [self.text drawInRect:textRect withAttributes:self.textAttributes];
     UIImage *result = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();

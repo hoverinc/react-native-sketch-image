@@ -141,7 +141,7 @@ int selectedPosition;
 
     float diffX = endPoint.x - startPoint.x;
     float diffY = endPoint.y - startPoint.y;
-    float thetaDiff = 0;
+    
     double theta;
     // get the correct angle depends on points positions
     if (diffX <= 0 && diffY <= 0) {
