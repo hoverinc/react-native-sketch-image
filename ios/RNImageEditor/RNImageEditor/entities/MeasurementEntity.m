@@ -197,4 +197,21 @@ int selectedPosition;
     }
     return false;
 }
+
+
+- (NSInteger)getDrawingStep {
+    // If point is selected - them drawing has finished
+    if (selectedPosition != DEFAULT_SELECTED_POSITION) return DEFAULT_DRAWING_STEP;
+        if ([points count] < MAX_POINTS_COUNT) {
+            return [points count];
+        }else {
+            return [points count] + 1;
+        }
+    return DEFAULT_DRAWING_STEP;
+}
+
+- (NSString *)getShapeType {
+    return @"MeasurementTool";
+}
+
 @end

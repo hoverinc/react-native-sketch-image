@@ -152,4 +152,8 @@ NSString * BORDER_COLOR = @"#1B5FA7";
     [result drawInRect:rect];
 }
 
+- (NSString *)getShapeType {
+    return @"Text";
+}
+
 @end

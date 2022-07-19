@@ -80,4 +80,8 @@
     CGContextStrokePath(contextRef);
 }
 
+- (NSString *)getShapeType {
+    return @"Ruler";
+}
+
 @end

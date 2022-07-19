@@ -659,9 +659,7 @@
                             entityStrokeWidth:self.entityStrokeWidth
                             entityStrokeColor:self.entityStrokeColor];
 
-    [self.motionEntities addObject:entity];
-    [self onShapeSelectionChanged:entity];
-    [self selectEntity:entity];
+    [self onAddShape:entity];
 }
 
 - (void)addRectEntity:(NSInteger)width andHeight: (NSInteger)height {
@@ -683,9 +681,7 @@
                           entityStrokeWidth:self.entityStrokeWidth
                           entityStrokeColor:self.entityStrokeColor];
 
-    [self.motionEntities addObject:entity];
-    [self onShapeSelectionChanged:entity];
-    [self selectEntity:entity];
+    [self onAddShape:entity];
 }
 
 - (void)addTriangleEntity {
@@ -707,9 +703,7 @@
                               entityStrokeWidth:self.entityStrokeWidth
                               entityStrokeColor:self.entityStrokeColor];
 
-    [self.motionEntities addObject:entity];
-    [self onShapeSelectionChanged:entity];
-    [self selectEntity:entity];
+    [self onAddShape:entity];
 }
 
 - (void)addArrowEntity {
@@ -731,9 +725,7 @@
                               entityStrokeWidth:self.entityStrokeWidth
                               entityStrokeColor:self.entityStrokeColor];
 
-    [self.motionEntities addObject:entity];
-    [self onShapeSelectionChanged:entity];
-    [self selectEntity:entity];
+    [self onAddShape:entity];
 }
 
 - (void)addRulerEntity {
@@ -755,9 +747,7 @@
                               entityStrokeWidth:self.entityStrokeWidth
                               entityStrokeColor:self.entityStrokeColor];
 
-    [self.motionEntities addObject:entity];
-    [self onShapeSelectionChanged:entity];
-    [self selectEntity:entity];
+    [self onAddShape:entity];
 }
 
 - (void)addMeasurementEntity {
@@ -778,9 +768,7 @@
                               entityStrokeColor:self.entityStrokeColor];
 
     _measurementEntity = entity;
-    [self.motionEntities addObject:entity];
-    [self onShapeSelectionChanged:entity];
-    [self selectEntity:entity];
+    [self onAddShape:entity];
 }
 
 
@@ -804,9 +792,14 @@
                            entityStrokeWidth:self.entityStrokeWidth
                            entityStrokeColor:self.entityStrokeColor];
 
+    [self onAddShape:entity];
+}
+
+- (void)onAddShape:(MotionEntity *)entity {
     [self.motionEntities addObject:entity];
     [self onShapeSelectionChanged:entity];
     [self selectEntity:entity];
+    [self onDrawingStateChanged];
 }
 
 - (void)selectEntity:(MotionEntity *)entity {
@@ -829,6 +822,7 @@
     MotionEntity *nextEntity = [self findEntityAtPointX:tapLocation.x andY:tapLocation.y];
     [self onShapeSelectionChanged:nextEntity];
     [self selectEntity:nextEntity];
+    [self onDrawingStateChanged];
 }
 
 - (MotionEntity *)findEntityAtPointX:(CGFloat)x andY: (CGFloat)y {
@@ -852,6 +846,7 @@
         }
     }
     [self deleteShape:entityToRemove];
+    [self onDrawingStateChanged];
 }
 
 - (void)unselectShape {
@@ -880,12 +875,14 @@
         if (!result) {
             _measurementEntity = nil;
             [self deleteShape:lastEntity];
+            [self onDrawingStateChanged];
         }else {
             [self selectEntity:lastEntity];
             // Select measurement tool to have posibility to continue drawing
             if ([lastEntity class] == [MeasurementEntity class]){
                 _measurementEntity = lastEntity;
             }
+            [self onDrawingStateChangedWithUndo:true];
         }
     }
 }
@@ -935,6 +932,7 @@
                 [self unselectShape];
                 [self onShapeSelectionChanged:nil];
             }
+            [self onDrawingStateChanged];
         } else {
             [self updateSelectionOnTapWithLocationPoint:tapLocation];
         }
@@ -998,6 +996,29 @@
         } else {
             // Add delay!
             _onChange(@{ @"isShapeSelected": @NO });
+        }
+    }
+}
+
+-(void)onDrawingStateChanged {
+    [self onDrawingStateChangedWithUndo:false];
+}
+
+-(void)onDrawingStateChangedWithUndo:(BOOL)withUndo {
+    if (_onChange) {
+        if (self.selectedEntity == nil){
+            _onChange(@{
+                @"canUndo": [self.motionEntities count] > 0 ? @YES : @NO,
+                @"canDelete":@NO,
+                @"drawingStep": @-1,
+            });
+        } else {
+            _onChange(@{
+                @"canUndo": [self.motionEntities count] > 0 ? @YES : @NO,
+                @"canDelete": [self.selectedEntity getDrawingStep] == -1 && !withUndo ? @YES : @NO,
+                @"drawingStep": @([self.selectedEntity getDrawingStep]),
+                @"shapeType": [self.selectedEntity getShapeType],
+            });
         }
     }
 }

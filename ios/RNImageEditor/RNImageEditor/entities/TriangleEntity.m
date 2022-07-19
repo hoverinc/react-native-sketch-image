@@ -75,4 +75,8 @@
     CGContextStrokePath(contextRef);
 }
 
+- (NSString *)getShapeType {
+    return @"Triangle";
+}
+
 @end

@@ -135,4 +135,12 @@
     return false;
 }
 
+- (int)getDrawingStep {
+    return DEFAULT_DRAWING_STEP;
+}
+
+- (NSString *)getShapeType {
+    return nil;
+}
+
 @end

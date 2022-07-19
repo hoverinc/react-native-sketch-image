@@ -14,6 +14,8 @@
 - (void)drawContent:(CGRect)rect withinContext: (CGContextRef)contextRef;
 @end
 
+static const int DEFAULT_DRAWING_STEP = -1 ;
+
 @interface MotionEntity : UIView <MotionEntityProtocol>
 
 @property (nonatomic) BOOL isSelected;
@@ -58,5 +60,7 @@
            entityStrokeWidth: (CGFloat)entityStrokeWidth
            entityStrokeColor: (UIColor *)entityStrokeColor;
 - (BOOL)undo;
+- (int)getDrawingStep;
+- (NSString *)getShapeType;
 
 @end

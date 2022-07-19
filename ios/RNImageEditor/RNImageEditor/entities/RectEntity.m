@@ -65,4 +65,8 @@
     CGContextStrokeRect(contextRef, entityRect);
 }
 
+- (NSString *)getShapeType {
+    return @"Rect";
+}
+
 @end
