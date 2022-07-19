@@ -1031,6 +1031,11 @@ public class ImageEditor extends View {
             if (!toRemove.undo()) {
                 deleteShape(toRemove);
             } else {
+                selectEntity(toRemove);
+                // Select MeasureToolEntity to have possibility to continue drawing
+                if (toRemove instanceof  MeasureToolEntity) {
+                    measurementEntity = (MeasureToolEntity) toRemove;
+                }
                 invalidateCanvas(true);
             }
         }
@@ -1161,7 +1166,6 @@ public class ImageEditor extends View {
                 handleTranslate(detector.getFocusDelta());
                 return true;
             }
-            //                measurementEntity.handleTranslate(detector.getFocusDelta());
             return measurementEntity != null;
         }
     }

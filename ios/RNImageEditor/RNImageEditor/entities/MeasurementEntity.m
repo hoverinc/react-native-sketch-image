@@ -184,4 +184,17 @@ int selectedPosition;
     CGContextSetFillColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
     CGContextFillEllipseInRect(contextRef, circleRect);
 }
+
+- (BOOL)undo {
+    NSUInteger currentCount = [points count];
+    if (currentCount > 0) {
+        [points removeLastObject];
+        // Clear selection if remove selected point
+        if (selectedPosition == currentCount) {
+            selectedPosition = DEFAULT_SELECTED_POSITION;
+        }
+        return [points count] > 0;
+    }
+    return false;
+}
 @end

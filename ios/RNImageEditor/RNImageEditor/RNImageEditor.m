@@ -598,7 +598,14 @@
 }
 
 - (void)addEntity:(NSString *)entityType textShapeFontType:(NSString *)textShapeFontType textShapeFontSize:(NSNumber *)textShapeFontSize textShapeText:(NSString *)textShapeText imageShapeAsset:(NSString *)imageShapeAsset {
-
+    
+    if (_measurementEntity != nil) {
+        [[self motionEntities] removeObject:_measurementEntity];
+        [_measurementEntity removeFromSuperview];
+        _measurementEntity = nil;
+        self.selectedEntity = nil;
+        [self setNeedsDisplay];
+    }
     switch ([@[@"Circle", @"Rect", @"Square", @"Triangle", @"Arrow", @"Text", @"Image", @"Ruler", @"MeasurementTool"] indexOfObject: entityType]) {
         case 1:
             [self addRectEntity:300 andHeight:150];
@@ -844,6 +851,14 @@
             break;
         }
     }
+    [self deleteShape:entityToRemove];
+}
+
+- (void)unselectShape {
+    [self selectEntity:nil];
+}
+
+-(void)deleteShape: (MotionEntity *)entityToRemove {
     if (entityToRemove) {
         [self.motionEntities removeObject:entityToRemove];
         [entityToRemove removeFromSuperview];
@@ -853,9 +868,28 @@
     }
 }
 
-- (void)unselectShape {
-    [self selectEntity:nil];
+- (void) undoShape {
+    MotionEntity* lastEntity = nil;
+    if (self.selectedEntity == nil) {
+        lastEntity = [self.motionEntities lastObject];
+    } else {
+        lastEntity = self.selectedEntity;
+    }
+    if (lastEntity != nil) {
+        bool result = [lastEntity undo];
+        if (!result) {
+            _measurementEntity = nil;
+            [self deleteShape:lastEntity];
+        }else {
+            [self selectEntity:lastEntity];
+            // Select measurement tool to have posibility to continue drawing
+            if ([lastEntity class] == [MeasurementEntity class]){
+                _measurementEntity = lastEntity;
+            }
+        }
+    }
 }
+
 
 - (void)increaseTextEntityFontSize {
     TextEntity *textEntity = [self getSelectedTextEntity];

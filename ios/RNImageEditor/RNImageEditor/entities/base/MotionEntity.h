@@ -57,5 +57,6 @@
            borderStrokeColor: (UIColor *)borderStrokeColor
            entityStrokeWidth: (CGFloat)entityStrokeWidth
            entityStrokeColor: (UIColor *)entityStrokeColor;
+- (BOOL)undo;
 
 @end
