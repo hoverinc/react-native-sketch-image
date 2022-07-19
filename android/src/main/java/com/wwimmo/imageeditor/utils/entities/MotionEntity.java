@@ -19,6 +19,8 @@ import com.wwimmo.imageeditor.utils.layers.Layer;
 @SuppressWarnings({"WeakerAccess"})
 public abstract class MotionEntity {
 
+
+    public static final int DEFAULT_DRAWING_STEP = -1;
     @NonNull
     protected final Layer layer;
 
@@ -285,5 +287,16 @@ public abstract class MotionEntity {
             super.finalize();
         }
     }
+
+    /**
+     * Return the current number of drawing step. Used for composite shapes.
+     * @return
+     */
+    public int getDrawingStep() {
+        return DEFAULT_DRAWING_STEP;
+    }
+
+
+    public abstract String getShapeType();
 
 }

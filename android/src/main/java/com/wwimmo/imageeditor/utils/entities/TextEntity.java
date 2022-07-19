@@ -199,4 +199,9 @@ public class TextEntity extends MotionEntity {
             bitmap.recycle();
         }
     }
+
+    @Override
+    public String getShapeType() {
+        return EntityType.TEXT.label;
+    }
 }

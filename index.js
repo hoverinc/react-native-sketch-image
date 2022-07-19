@@ -38,6 +38,7 @@ export default class RNImageEditor extends React.Component {
         savePreference: PropTypes.func,
         onSketchSaved: PropTypes.func,
         onShapeSelectionChanged: PropTypes.func,
+        onDrawingStateChanged: PropTypes.func,
         shapeConfiguration: PropTypes.shape({
             shapeBorderColor: PropTypes.string,
             shapeBorderStyle: PropTypes.string,
@@ -123,6 +124,7 @@ export default class RNImageEditor extends React.Component {
         savePreference: null,
         onSketchSaved: () => {},
         onShapeSelectionChanged: () => {},
+        onDrawingStateChanged: () => {},
         shapeConfiguration: {
             shapeBorderColor: "transparent",
             shapeBorderStyle: "Dashed",
@@ -372,6 +374,7 @@ export default class RNImageEditor extends React.Component {
                     strokeWidth={this.state.strokeWidth}
                     onSketchSaved={(success, path) => this.props.onSketchSaved(success, path)}
                     onShapeSelectionChanged={(isShapeSelected) => this.props.onShapeSelectionChanged(isShapeSelected)}
+                    onDrawingStateChanged={(e) => this.props.onDrawingStateChanged(e)}
                     touchEnabled={this.props.touchEnabled}
                     onPathsChange={this.props.onPathsChange}
                     text={this.props.text}

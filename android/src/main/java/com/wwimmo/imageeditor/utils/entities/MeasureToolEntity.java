@@ -29,6 +29,7 @@ public class MeasureToolEntity extends MotionEntity {
     private PointF selectedPoint;
 
     private static final int POINTS_COUNT = 2;
+    private static final int MAX_DRAWING_STEPS = POINTS_COUNT + 1;
     private static final int POINT_TOUCH_AREA = 100;
     private static final int INNER_RADIUS = 14;
     private static final int OUTER_RADIUS = 22;
@@ -278,5 +279,21 @@ public class MeasureToolEntity extends MotionEntity {
             return  currentPoints.size() > 0;
         }
         return false;
+    }
+
+    @Override
+    public String getShapeType() {
+        return EntityType.MEASUREMENT_TOOL.label;
+    }
+
+    @Override
+    public int getDrawingStep() {
+        // If point is selected - them drawing has finished
+        if (selectedPoint != null) return DEFAULT_DRAWING_STEP;
+        if (currentPoints.size() < POINTS_COUNT) {
+            return  currentPoints.size();
+        }else {
+            return currentPoints.size() + 1;
+        }
     }
 }

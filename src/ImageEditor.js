@@ -33,6 +33,7 @@ class ImageEditor extends React.Component {
         onStrokeEnd: PropTypes.func,
         onSketchSaved: PropTypes.func,
         onShapeSelectionChanged: PropTypes.func,
+        onDrawingStateChanged: PropTypes.func,
         shapeConfiguration: PropTypes.shape({
             shapeBorderColor: PropTypes.string,
             shapeBorderStyle: PropTypes.string,
@@ -393,6 +394,13 @@ class ImageEditor extends React.Component {
                         this.props.onSketchSaved(e.nativeEvent.success);
                     } else if (e.nativeEvent.hasOwnProperty("isShapeSelected")) {
                         this.props.onShapeSelectionChanged(e.nativeEvent.isShapeSelected);
+                    } else if (e.nativeEvent.hasOwnProperty("canUndo")) {
+                        this.props.onDrawingStateChanged({
+                            canUndo : e.nativeEvent.canUndo,
+                            canDelete : e.nativeEvent.canDelete,
+                            shapeType : e.nativeEvent.shapeType,
+                            drawingStep : e.nativeEvent.drawingStep,
+                        })
                     }
                 }}
                 localSourceImage={this.props.localSourceImage}

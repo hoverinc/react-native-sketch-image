@@ -60,6 +60,9 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
         onShapeSelectionChanged={v => {
           console.log('onShapeSelectionChanged', v)
         }}
+        onDrawingStateChanged={e => {
+          console.log('onDrawingStateChanged', JSON.stringify(e));
+        }}
       />
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <View style={{ flexDirection: "row" }}>

@@ -139,4 +139,9 @@ public class CircleEntity extends MotionEntity {
         }
     }
 
+    @Override
+    public String getShapeType() {
+        return EntityType.CIRCLE.label;
+    }
+
 }

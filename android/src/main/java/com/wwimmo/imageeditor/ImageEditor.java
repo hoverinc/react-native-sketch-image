@@ -901,6 +901,7 @@ public class ImageEditor extends View {
             mEntities.add(entity);
             onShapeSelectionChanged(entity);
             selectEntity(entity);
+            onDrawingStateChanged();
         }
     }
 
@@ -929,7 +930,7 @@ public class ImageEditor extends View {
 
             boolean needUpdateUI = false;
             if (mSelectedEntity instanceof MeasureToolEntity) {
-                needUpdateUI =  ((MeasureToolEntity) mSelectedEntity).handleTranslate(delta);
+                needUpdateUI = ((MeasureToolEntity) mSelectedEntity).handleTranslate(delta);
             } else {
                 float newCenterX = mSelectedEntity.absoluteCenterX() + delta.x;
                 float newCenterY = mSelectedEntity.absoluteCenterY() + delta.y;
@@ -982,6 +983,7 @@ public class ImageEditor extends View {
         MotionEntity entity = findEntityAtPoint(e.getX(), e.getY());
         onShapeSelectionChanged(entity);
         selectEntity(entity);
+        onDrawingStateChanged();
     }
 
     public void releaseSelectedEntity() {
@@ -1003,6 +1005,7 @@ public class ImageEditor extends View {
         measurementEntity = null;
         selectEntity(null);
         onShapeSelectionChanged(null);
+        onDrawingStateChanged();
     }
 
     private void deleteShape(MotionEntity toRemoveEntity) {
@@ -1025,17 +1028,18 @@ public class ImageEditor extends View {
                 toRemove = mEntities.get(mEntities.size() - 1);
             }
         } else {
-            toRemove =  mSelectedEntity;
+            toRemove = mSelectedEntity;
         }
         if (toRemove != null) {
             if (!toRemove.undo()) {
                 deleteShape(toRemove);
+                onDrawingStateChanged(false);
             } else {
                 selectEntity(toRemove);
-                // Select MeasureToolEntity to have possibility to continue drawing
-                if (toRemove instanceof  MeasureToolEntity) {
+                if (toRemove instanceof MeasureToolEntity) {
                     measurementEntity = (MeasureToolEntity) toRemove;
                 }
+                onDrawingStateChanged(true);
                 invalidateCanvas(true);
             }
         }
@@ -1075,6 +1079,39 @@ public class ImageEditor extends View {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Call everytime  when change the selected entity or entity list.
+     * Notify RN side about changes
+     */
+    private void onDrawingStateChanged() {
+        onDrawingStateChanged(false);
+    }
+
+    private void onDrawingStateChanged(boolean fromUndo) {
+        WritableMap event = Arguments.createMap();
+        // shapes size >0
+        event.putBoolean("canUndo", mEntities.size() > 0);
+
+        if (mSelectedEntity == null) {
+            event.putBoolean("canDelete", false);
+            event.putString("shapeType", null);
+            event.putInt("drawingStep", MotionEntity.DEFAULT_DRAWING_STEP);
+        } else {
+            //  selected && !drawing && !undo
+            event.putBoolean("canDelete", mSelectedEntity.getDrawingStep() == MotionEntity.DEFAULT_DRAWING_STEP && !fromUndo);
+            // selected shape type
+            event.putString("shapeType", mSelectedEntity.getShapeType());
+            // -1 OR drawing step for selected entity
+            event.putInt("drawingStep", mSelectedEntity.getDrawingStep());
+        }
+
+        mContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                getId(),
+                "topChange",
+                event);
+
     }
 
     /**
@@ -1125,6 +1162,7 @@ public class ImageEditor extends View {
                 } else {
                     clearCurrentShape();
                 }
+                onDrawingStateChanged();
             } else {
                 // Update mSelectedEntity.
                 // Fires onShapeSelectionChanged (JS-PanResponder enabling/disabling)
