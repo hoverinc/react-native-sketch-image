@@ -6,6 +6,11 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.text.Layout;
+import android.text.StaticLayout;
+import android.text.TextPaint;
 
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
@@ -13,11 +18,13 @@ import androidx.annotation.Nullable;
 
 import com.wwimmo.imageeditor.utils.layers.Layer;
 
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MeasureToolEntity extends MotionEntity {
+    private static final int CORNER_RADIUS = 8;
+    private static final int BORDER_PADDING = 16;
+
     private final int mWidth;
     private final int mHeight;
     private int mStrokeColor;
@@ -27,6 +34,8 @@ public class MeasureToolEntity extends MotionEntity {
     private Canvas mCanvas;
     private final List<PointF> currentPoints;
     private PointF selectedPoint;
+    private String mCurrentText;
+    private final TextPaint mTextPaint;
 
     private static final int POINTS_COUNT = 2;
     private static final int MAX_DRAWING_STEPS = POINTS_COUNT + 1;
@@ -46,6 +55,7 @@ public class MeasureToolEntity extends MotionEntity {
         this.mStrokeColor = Color.BLACK;
         currentPoints = new ArrayList<>();
         updateEntity(false);
+        mTextPaint = new TextPaint();
     }
 
     private void updateEntity(boolean moveToPreviousCenter) {
@@ -110,6 +120,12 @@ public class MeasureToolEntity extends MotionEntity {
                 this.drawPoint(pointF, mPaint);
                 mPaint.setStrokeWidth(savedStrokeWidth);
 
+                if (i == 1 && mCurrentText != null) {
+                    drawText(
+                            currentPoints.get(0), pointF,
+                            mCanvas, mTextPaint, mPaint, mCurrentText
+                    );
+                }
             }
         }
 
@@ -120,7 +136,7 @@ public class MeasureToolEntity extends MotionEntity {
         return Math.hypot(x2 - x1, y2 - y1);
     }
 
-    private PointF getOuterRadiusPoint( PointF startPoint, PointF endPoint, float radius) {
+    private PointF getOuterRadiusPoint(PointF startPoint, PointF endPoint, float radius) {
         // Build triangle
         double a = distance(startPoint.x, startPoint.y, endPoint.x, startPoint.y);
         double b = distance(endPoint.x, endPoint.y, endPoint.x, startPoint.y);
@@ -130,20 +146,58 @@ public class MeasureToolEntity extends MotionEntity {
         double theta;
         // get the correct angle depends on points positions
         if (diffX <= 0 && diffY <= 0) {
-            theta = Math.PI + Math.atan(b/a);
-        }else if (diffX > 0 && diffY <= 0) {
-            theta =  - Math.atan(b/a);
-        } else if (diffX <= 0 && diffY > 0){
-            theta = Math.PI - Math.atan(b/a);
+            theta = Math.PI + Math.atan(b / a);
+        } else if (diffX > 0 && diffY <= 0) {
+            theta = -Math.atan(b / a);
+        } else if (diffX <= 0 && diffY > 0) {
+            theta = Math.PI - Math.atan(b / a);
         } else {
-            theta = Math.atan(b/a);
+            theta = Math.atan(b / a);
         }
 
-        float x = (float)  (startPoint.x + radius * Math.cos(theta));
-        float y = (float)  (startPoint.y + radius * Math.sin(theta));
+        float x = (float) (startPoint.x + radius * Math.cos(theta));
+        float y = (float) (startPoint.y + radius * Math.sin(theta));
         // TODO done in the same way as iOS but could be reduced amount of created object if
         // use directly
         return new PointF(x, y);
+    }
+
+    private static void drawText(PointF a, PointF b, Canvas canvas, TextPaint textPaint, Paint bgPaint, String text) {
+        float centerX = (a.x + b.x) / 2;
+        float centerY = (a.y + b.y) / 2;
+
+        Rect textRect = new Rect();
+        textPaint.getTextBounds(text, 0, text.length(), textRect);
+        int textWidth = textRect.width();
+        StaticLayout sl = new StaticLayout(
+                text,
+                textPaint,
+                textWidth,
+                Layout.Alignment.ALIGN_NORMAL,
+                1.0f,
+                1.0f,
+                true
+        );
+
+        canvas.save();
+        float translateX = centerX - textWidth / 2;
+        float translateY = centerY - sl.getHeight() / 2;
+        canvas.translate(translateX, translateY);
+
+        // background first
+        bgPaint.setStyle(Paint.Style.FILL);
+        RectF bgRect = new RectF();
+        bgRect.set(
+                -BORDER_PADDING,
+                -BORDER_PADDING,
+                textWidth + BORDER_PADDING,
+                sl.getHeight() + BORDER_PADDING
+        );
+        canvas.drawRoundRect(bgRect, CORNER_RADIUS, CORNER_RADIUS, bgPaint);
+        // then text
+        sl.draw(canvas);
+
+        canvas.restore();
     }
 
     private void drawConnection(PointF startPoint, PointF endPoint) {
@@ -210,9 +264,9 @@ public class MeasureToolEntity extends MotionEntity {
     public boolean addPoint(float x, float y) {
         if (currentPoints.size() < POINTS_COUNT) {
             currentPoints.add(new PointF(x, y));
-            return currentPoints.size() < POINTS_COUNT;
+            return currentPoints.size() < POINTS_COUNT || mCurrentText == null;
         }
-        return false;
+        return mCurrentText == null;
     }
 
     private void drawPoint(PointF point, Paint paint) {
@@ -269,14 +323,18 @@ public class MeasureToolEntity extends MotionEntity {
 
     @Override
     public boolean undo() {
-        if (currentPoints.size() > 0 ) {
+        if (mCurrentText != null) {
+            mCurrentText = null;
+            return true;
+        }
+        if (currentPoints.size() > 0) {
             int lastIndex = currentPoints.size() - 1;
             PointF last = currentPoints.get(lastIndex);
             if (last == selectedPoint) {
                 selectedPoint = null;
             }
             currentPoints.remove(lastIndex);
-            return  currentPoints.size() > 0;
+            return currentPoints.size() > 0;
         }
         return false;
     }
@@ -291,9 +349,26 @@ public class MeasureToolEntity extends MotionEntity {
         // If point is selected - them drawing has finished
         if (selectedPoint != null) return DEFAULT_DRAWING_STEP;
         if (currentPoints.size() < POINTS_COUNT) {
-            return  currentPoints.size();
-        }else {
-            return currentPoints.size() + 1;
+            return currentPoints.size();
+        } else {
+            return currentPoints.size() + (mCurrentText == null ? 0 : 1);
         }
+    }
+
+    public int getTextStep() {
+        return currentPoints.size();
+    }
+
+
+    public boolean isTextStep() {
+        return getDrawingStep() == getTextStep();
+    }
+
+
+    public void addText(String text, int fontSize) {
+        mCurrentText = text;
+        mTextPaint.setStyle(Paint.Style.FILL);
+        mTextPaint.setTextSize(fontSize);
+        mTextPaint.setColor(Color.WHITE);
     }
 }

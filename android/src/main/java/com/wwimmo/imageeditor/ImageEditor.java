@@ -701,7 +701,8 @@ public class ImageEditor extends View {
      * MotionEntities related code
      **/
     public void addEntity(EntityType shapeType, String textShapeFontType, int textShapeFontSize, String textShapeText, String imageShapeAsset) {
-        if (measurementEntity != null) {
+        boolean shouldContinue = measurementEntity != null &&  measurementEntity.isTextStep() && shapeType == EntityType.TEXT;
+        if (measurementEntity != null && !shouldContinue) {
             mEntities.remove(measurementEntity);
             measurementEntity = null;
             mSelectedEntity = null;
@@ -711,7 +712,14 @@ public class ImageEditor extends View {
                 addCircleEntity();
                 break;
             case TEXT:
-                addTextEntity(textShapeFontType, textShapeFontSize, textShapeText);
+                if (shouldContinue) {
+                    measurementEntity.addText(textShapeText, textShapeFontSize);
+                    onDrawingStateChanged();
+                    invalidateCanvas(true);
+                    clearCurrentShape();
+                }else {
+                    addTextEntity(textShapeFontType, textShapeFontSize, textShapeText);
+                }
                 break;
             case RECT:
                 addRectEntity(600, 300);
