@@ -878,7 +878,7 @@
             [self onDrawingStateChanged];
         }else {
             [self selectEntity:lastEntity];
-            // Select measurement tool to have posibility to continue drawing
+            // Select measurement tool to have possibility to continue drawing
             if ([lastEntity class] == [MeasurementEntity class]){
                 _measurementEntity = lastEntity;
             }
@@ -928,6 +928,8 @@
             bool inProgress = [_measurementEntity addPoint:tapLocation];
             [_measurementEntity setNeedsDisplay];
             if (!inProgress) {
+                // call before clear to notify RN about finished shape
+                [self onDrawingStateChanged];
                 _measurementEntity = nil;
                 [self unselectShape];
                 [self onShapeSelectionChanged:nil];

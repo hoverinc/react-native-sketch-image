@@ -1160,6 +1160,8 @@ public class ImageEditor extends View {
                 if (inProgress) {
                     invalidateCanvas(true);
                 } else {
+                    // Select measurement tool to have possibility to continue drawing
+                    onDrawingStateChanged();
                     clearCurrentShape();
                 }
                 onDrawingStateChanged();
