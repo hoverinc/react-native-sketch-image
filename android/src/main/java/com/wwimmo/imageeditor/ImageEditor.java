@@ -198,6 +198,7 @@ public class ImageEditor extends View {
             setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         }
         invalidateCanvas(true);
+        onDrawingStateChangedWithStroke(true);
     }
 
     public void addPoint(float x, float y, boolean isMove) {
@@ -263,6 +264,7 @@ public class ImageEditor extends View {
             }
             mCurrentPath = null;
         }
+        onDrawingStateChangedWithStroke(false);
     }
 
     @Override
@@ -981,9 +983,12 @@ public class ImageEditor extends View {
 
     private void updateSelectionOnTap(MotionEvent e) {
         MotionEntity entity = findEntityAtPoint(e.getX(), e.getY());
+        boolean shouldNotifyChanges = mSelectedEntity != entity;
         onShapeSelectionChanged(entity);
         selectEntity(entity);
-        onDrawingStateChanged();
+        if (shouldNotifyChanges) {
+            onDrawingStateChanged();
+        }
     }
 
     public void releaseSelectedEntity() {
@@ -1107,6 +1112,22 @@ public class ImageEditor extends View {
             event.putInt("drawingStep", mSelectedEntity.getDrawingStep());
         }
 
+        mContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                getId(),
+                "topChange",
+                event);
+
+    }
+
+    private void onDrawingStateChangedWithStroke(boolean pointerDown) {
+        if (mSelectedEntity != null) {
+            return;
+        }
+        WritableMap event = Arguments.createMap();
+        event.putBoolean("canUndo", mEntities.size() > 0);
+        event.putBoolean("canDelete", false);
+        event.putString("shapeType", "stroke");
+        event.putInt("drawingStep", pointerDown ? 0 : 1);
         mContext.getJSModule(RCTEventEmitter.class).receiveEvent(
                 getId(),
                 "topChange",
