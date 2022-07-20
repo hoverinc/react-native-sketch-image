@@ -297,7 +297,6 @@
                     strokeColor: strokeColor
                     strokeWidth: strokeWidth];
     [_paths addObject: _currentPath];
-    [self onDrawingStateChangedWithStroke:true];
 }
 
 - (void) addPath:(int) pathId strokeColor:(UIColor*) strokeColor strokeWidth:(int) strokeWidth points:(NSArray*) points {
@@ -356,6 +355,7 @@
 
         [self setFrozenImageNeedsUpdate];
         [self setNeedsDisplayInRect:updateRect];
+        [self onDrawingStateChangedWithStroke:true];
     }
 }
 

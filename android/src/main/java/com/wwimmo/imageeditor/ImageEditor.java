@@ -198,7 +198,6 @@ public class ImageEditor extends View {
             setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         }
         invalidateCanvas(true);
-        onDrawingStateChangedWithStroke(true);
     }
 
     public void addPoint(float x, float y, boolean isMove) {
@@ -211,6 +210,7 @@ public class ImageEditor extends View {
                 mCurrentPath.drawLastPoint(mDrawingCanvas);
             }
             invalidate(updateRect);
+            onDrawingStateChangedWithStroke(true);
         }
     }
 
