@@ -297,6 +297,7 @@
                     strokeColor: strokeColor
                     strokeWidth: strokeWidth];
     [_paths addObject: _currentPath];
+    [self onDrawingStateChangedWithStroke:true];
 }
 
 - (void) addPath:(int) pathId strokeColor:(UIColor*) strokeColor strokeWidth:(int) strokeWidth points:(NSArray*) points {
@@ -364,6 +365,7 @@
     }
     _currentPath = nil;
     [self notifyPathsUpdate];
+    [self onDrawingStateChangedWithStroke:false];
 }
 
 - (void) clear {
@@ -598,7 +600,7 @@
 }
 
 - (void)addEntity:(NSString *)entityType textShapeFontType:(NSString *)textShapeFontType textShapeFontSize:(NSNumber *)textShapeFontSize textShapeText:(NSString *)textShapeText imageShapeAsset:(NSString *)imageShapeAsset {
-    
+
     if (_measurementEntity != nil) {
         [[self motionEntities] removeObject:_measurementEntity];
         [_measurementEntity removeFromSuperview];
@@ -820,9 +822,13 @@
 
 - (void)updateSelectionOnTapWithLocationPoint:(CGPoint)tapLocation {
     MotionEntity *nextEntity = [self findEntityAtPointX:tapLocation.x andY:tapLocation.y];
+    // Protect from calling wrong events during drawing stroke
+    bool shouldCallStateChanged = (self.selectedEntity == nil && nextEntity == nil) || self.selectedEntity != nextEntity;
     [self onShapeSelectionChanged:nextEntity];
     [self selectEntity:nextEntity];
-    [self onDrawingStateChanged];
+    if (shouldCallStateChanged) {
+        [self onDrawingStateChanged];
+    }
 }
 
 - (MotionEntity *)findEntityAtPointX:(CGFloat)x andY: (CGFloat)y {
@@ -1022,6 +1028,17 @@
                 @"shapeType": [self.selectedEntity getShapeType],
             });
         }
+    }
+}
+
+- (void)onDrawingStateChangedWithStroke:(BOOL)withPointerDown {
+    if (_onChange && self.selectedEntity == nil) {
+        _onChange(@{
+            @"canUndo": [self.motionEntities count] > 0 ? @YES : @NO,
+            @"canDelete": @NO,
+            @"drawingStep": @(withPointerDown ? 0 : 1),
+            @"shapeType": @"stroke",
+        });
     }
 }
 
