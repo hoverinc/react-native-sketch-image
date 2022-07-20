@@ -18,6 +18,7 @@
 
 @implementation RNImageEditor
 {
+    NSMutableArray *_allShapes;
     RCTEventDispatcher *_eventDispatcher;
     NSMutableArray *_paths;
     RNImageEditorData *_currentPath;
@@ -41,6 +42,7 @@
     if (self) {
         _eventDispatcher = eventDispatcher;
         _paths = [NSMutableArray new];
+        _allShapes = [NSMutableArray new];
         _needsFullRedraw = YES;
 
         self.backgroundColor = [UIColor clearColor];
@@ -328,6 +330,7 @@
     int index = -1;
     for(int i=0; i<_paths.count; i++) {
         if (((RNImageEditorData*)_paths[i]).pathId == pathId) {
+            [_allShapes removeObject:@(((RNImageEditorData*)_paths[i]).pathId).stringValue];
             index = i;
             break;
         }
@@ -363,6 +366,9 @@
     if (_currentPath.isTranslucent) {
         [_currentPath drawInContext:_drawingContext];
     }
+    if ([_currentPath.points count] > 0) {
+        [_allShapes addObject:@(_currentPath.pathId).stringValue];
+    }
     _currentPath = nil;
     [self notifyPathsUpdate];
     [self onDrawingStateChangedWithStroke:false];
@@ -370,10 +376,13 @@
 
 - (void) clear {
     [_paths removeAllObjects];
+    [self.motionEntities removeAllObjects];
+    [_allShapes removeAllObjects];
     _currentPath = nil;
     _needsFullRedraw = YES;
     [self setNeedsDisplay];
     [self notifyPathsUpdate];
+    [self onDrawingStateChanged];
 }
 
 - (UIImage*)createImageWithTransparentBackground: (BOOL) transparent includeImage:(BOOL)includeImage includeText:(BOOL)includeText cropToImageSize:(BOOL)cropToImageSize {
@@ -600,9 +609,10 @@
 }
 
 - (void)addEntity:(NSString *)entityType textShapeFontType:(NSString *)textShapeFontType textShapeFontSize:(NSNumber *)textShapeFontSize textShapeText:(NSString *)textShapeText imageShapeAsset:(NSString *)imageShapeAsset {
-
+    
     if (_measurementEntity != nil) {
         [[self motionEntities] removeObject:_measurementEntity];
+        [_allShapes removeObject:_measurementEntity.entityId];
         [_measurementEntity removeFromSuperview];
         _measurementEntity = nil;
         self.selectedEntity = nil;
@@ -799,6 +809,7 @@
 
 - (void)onAddShape:(MotionEntity *)entity {
     [self.motionEntities addObject:entity];
+    [_allShapes addObject:entity.getEntityId];
     [self onShapeSelectionChanged:entity];
     [self selectEntity:entity];
     [self onDrawingStateChanged];
@@ -823,10 +834,10 @@
 - (void)updateSelectionOnTapWithLocationPoint:(CGPoint)tapLocation {
     MotionEntity *nextEntity = [self findEntityAtPointX:tapLocation.x andY:tapLocation.y];
     // Protect from calling wrong events during drawing stroke
-    bool shouldCallStateChanged = (self.selectedEntity == nil && nextEntity == nil) || self.selectedEntity != nextEntity;
+    bool sholdCallStateChanged = (self.selectedEntity == nil && nextEntity == nil) || self.selectedEntity != nextEntity;
     [self onShapeSelectionChanged:nextEntity];
     [self selectEntity:nextEntity];
-    if (shouldCallStateChanged) {
+    if (sholdCallStateChanged) {
         [self onDrawingStateChanged];
     }
 }
@@ -862,6 +873,7 @@
 -(void)deleteShape: (MotionEntity *)entityToRemove {
     if (entityToRemove) {
         [self.motionEntities removeObject:entityToRemove];
+        [_allShapes removeObject:entityToRemove.getEntityId];
         [entityToRemove removeFromSuperview];
         entityToRemove = nil;
         [self selectEntity:entityToRemove];
@@ -871,8 +883,15 @@
 
 - (void) undoShape {
     MotionEntity* lastEntity = nil;
+    NSString* lastId = nil;
     if (self.selectedEntity == nil) {
-        lastEntity = [self.motionEntities lastObject];
+        lastId = [_allShapes lastObject];
+        if (lastId != nil) {
+            NSCharacterSet* notDigits = [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
+            if ([lastId rangeOfCharacterFromSet:notDigits].location != NSNotFound) {
+                lastEntity = [self.motionEntities lastObject];
+            }
+        }
     } else {
         lastEntity = self.selectedEntity;
     }
@@ -890,6 +909,8 @@
             }
             [self onDrawingStateChangedWithUndo:true];
         }
+    } else if (lastId != nil) {
+        [self deletePath:[lastId intValue]];
     }
 }
 
@@ -1012,17 +1033,21 @@
     [self onDrawingStateChangedWithUndo:false];
 }
 
+- (BOOL)canUndo {
+    return [_allShapes count] > 0 ? true : false;
+}
+
 -(void)onDrawingStateChangedWithUndo:(BOOL)withUndo {
     if (_onChange) {
         if (self.selectedEntity == nil){
             _onChange(@{
-                @"canUndo": [self.motionEntities count] > 0 ? @YES : @NO,
+                @"canUndo": @([self canUndo]),
                 @"canDelete":@NO,
                 @"drawingStep": @-1,
             });
         } else {
             _onChange(@{
-                @"canUndo": [self.motionEntities count] > 0 ? @YES : @NO,
+                @"canUndo": @([self canUndo]),
                 @"canDelete": [self.selectedEntity getDrawingStep] == -1 && !withUndo ? @YES : @NO,
                 @"drawingStep": @([self.selectedEntity getDrawingStep]),
                 @"shapeType": [self.selectedEntity getShapeType],
@@ -1034,7 +1059,7 @@
 - (void)onDrawingStateChangedWithStroke:(BOOL)withPointerDown {
     if (_onChange && self.selectedEntity == nil) {
         _onChange(@{
-            @"canUndo": [self.motionEntities count] > 0 ? @YES : @NO,
+            @"canUndo": @([self canUndo]),
             @"canDelete": @NO,
             @"drawingStep": @(withPointerDown ? 0 : 1),
             @"shapeType": @"stroke",

@@ -182,7 +182,9 @@ public class ImageEditor extends View {
      * Canvas/Draw related code
      **/
     public void clear() {
+        allShapes.clear();
         mPaths.clear();
+        mEntities.clear();
         mCurrentPath = null;
         mNeedsFullRedraw = true;
         invalidateCanvas(true);

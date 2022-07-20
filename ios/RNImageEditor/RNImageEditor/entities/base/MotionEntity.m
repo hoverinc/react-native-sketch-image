@@ -45,6 +45,7 @@
         self.entityStrokeColor = entityStrokeColor;
         
         self.backgroundColor = [UIColor clearColor];
+        self.entityId = [[NSUUID UUID] UUIDString];
     }
     return self;
 }
@@ -141,6 +142,10 @@
 
 - (NSString *)getShapeType {
     return nil;
+}
+
+- (NSString *)getEntityId {
+    return self.entityId;
 }
 
 @end
