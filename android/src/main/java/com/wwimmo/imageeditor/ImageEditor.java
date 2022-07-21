@@ -215,7 +215,9 @@ public class ImageEditor extends View {
                 mCurrentPath.drawLastPoint(mDrawingCanvas);
             }
             invalidate(updateRect);
-            onDrawingStateChangedWithStroke(true);
+            if (mCurrentPath.points.size() > 0) {
+                onDrawingStateChangedWithStroke(true);
+            }
         }
     }
 
@@ -272,10 +274,10 @@ public class ImageEditor extends View {
             // Save only path with points
             if (mCurrentPath.points.size() > 0 ) {
                 allShapes.add(String.valueOf(mCurrentPath.id));
+                onDrawingStateChangedWithStroke(false);
             }
             mCurrentPath = null;
         }
-        onDrawingStateChangedWithStroke(false);
     }
 
     @Override
@@ -765,7 +767,7 @@ public class ImageEditor extends View {
     protected void addCircleEntity() {
         Layer circleLayer = new Layer();
         CircleEntity circleEntity = null;
-        if (mSketchCanvas.getWidth() < 100 || mSketchCanvas.getHeight() < 100) {
+        if (mDrawingCanvas.getWidth() > mSketchCanvas.getWidth() || mDrawingCanvas.getHeight() > mSketchCanvas.getHeight()) {
             circleEntity = new CircleEntity(circleLayer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight(), 300, 20f, mEntityStrokeWidth, mEntityStrokeColor);
         } else {
             circleEntity = new CircleEntity(circleLayer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight(), 300, 20f, mEntityStrokeWidth, mEntityStrokeColor);
@@ -782,7 +784,7 @@ public class ImageEditor extends View {
     protected void addTriangleEntity() {
         Layer triangleLayer = new Layer();
         TriangleEntity triangleEntity = null;
-        if (mSketchCanvas.getWidth() < 100 || mSketchCanvas.getHeight() < 100) {
+        if (mDrawingCanvas.getWidth() > mSketchCanvas.getWidth() || mDrawingCanvas.getHeight() > mSketchCanvas.getHeight()) {
             triangleEntity = new TriangleEntity(triangleLayer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight(), 600, 20f, mEntityStrokeWidth, mEntityStrokeColor);
         } else {
             triangleEntity = new TriangleEntity(triangleLayer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight(), 600, 20f, mEntityStrokeWidth, mEntityStrokeColor);
@@ -799,7 +801,7 @@ public class ImageEditor extends View {
     protected void addArrowEntity() {
         Layer arrowLayer = new Layer();
         ArrowEntity arrowEntity = null;
-        if (mSketchCanvas.getWidth() < 100 || mSketchCanvas.getHeight() < 100) {
+        if (mDrawingCanvas.getWidth() > mSketchCanvas.getWidth() || mDrawingCanvas.getHeight() > mSketchCanvas.getHeight()) {
             arrowEntity = new ArrowEntity(arrowLayer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight(), 600, 600, 20f, mEntityStrokeWidth, mEntityStrokeColor);
         } else {
             arrowEntity = new ArrowEntity(arrowLayer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight(), 600, 600, 20f, mEntityStrokeWidth, mEntityStrokeColor);
@@ -816,7 +818,7 @@ public class ImageEditor extends View {
     protected void addRulerEntity() {
         Layer arrowLayer = new Layer();
         MotionEntity entity = null;
-        if (mSketchCanvas.getWidth() < 100 || mSketchCanvas.getHeight() < 100) {
+        if (mDrawingCanvas.getWidth() > mSketchCanvas.getWidth() || mDrawingCanvas.getHeight() > mSketchCanvas.getHeight()) {
             entity = new RulerLineEntity(arrowLayer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight(), 600, 600, 20f, mEntityStrokeWidth, mEntityStrokeColor);
         } else {
             entity = new RulerLineEntity(arrowLayer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight(), 600, 600, 20f, mEntityStrokeWidth, mEntityStrokeColor);
@@ -832,7 +834,7 @@ public class ImageEditor extends View {
 
     protected void startMeasurementToolEntity() {
         Layer layer = new Layer();
-        if (mSketchCanvas.getWidth() < 100 || mSketchCanvas.getHeight() < 100) {
+        if (mDrawingCanvas.getWidth() > mSketchCanvas.getWidth() || mDrawingCanvas.getHeight() > mSketchCanvas.getHeight()) {
             measurementEntity = new MeasureToolEntity(layer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight());
         } else {
             measurementEntity = new MeasureToolEntity(layer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight());
@@ -847,7 +849,7 @@ public class ImageEditor extends View {
     protected void addRectEntity(int width, int height) {
         Layer rectLayer = new Layer();
         RectEntity rectEntity = null;
-        if (mSketchCanvas.getWidth() < 100 || mSketchCanvas.getHeight() < 100) {
+        if (mDrawingCanvas.getWidth() > mSketchCanvas.getWidth() || mDrawingCanvas.getHeight() > mSketchCanvas.getHeight()) {
             rectEntity = new RectEntity(rectLayer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight(), width, height, 30f, mEntityStrokeWidth, mEntityStrokeColor);
         } else {
             rectEntity = new RectEntity(rectLayer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight(), width, height, 30f, mEntityStrokeWidth, mEntityStrokeColor);
@@ -870,7 +872,7 @@ public class ImageEditor extends View {
         }
 
         TextEntity textEntity = null;
-        if (mSketchCanvas.getWidth() < 100 || mSketchCanvas.getHeight() < 100) {
+        if (mDrawingCanvas.getWidth() > mSketchCanvas.getWidth() || mDrawingCanvas.getHeight() > mSketchCanvas.getHeight()) {
             textEntity = new TextEntity(textLayer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight());
         } else {
             textEntity = new TextEntity(textLayer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight());
@@ -1228,12 +1230,12 @@ public class ImageEditor extends View {
                 boolean inProgress = measurementEntity.addPoint(e.getX(), e.getY());
                 if (inProgress) {
                     invalidateCanvas(true);
+                    onDrawingStateChanged();
                 } else {
                     // Select measurement tool to have possibility to continue drawing
                     onDrawingStateChanged();
                     clearCurrentShape();
                 }
-                onDrawingStateChanged();
             } else {
                 // Update mSelectedEntity.
                 // Fires onShapeSelectionChanged (JS-PanResponder enabling/disabling)
