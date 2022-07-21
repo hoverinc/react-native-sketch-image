@@ -215,7 +215,9 @@ public class ImageEditor extends View {
                 mCurrentPath.drawLastPoint(mDrawingCanvas);
             }
             invalidate(updateRect);
-            onDrawingStateChangedWithStroke(true);
+            if (mCurrentPath.points.size() > 0) {
+                onDrawingStateChangedWithStroke(true);
+            }
         }
     }
 
@@ -272,10 +274,10 @@ public class ImageEditor extends View {
             // Save only path with points
             if (mCurrentPath.points.size() > 0 ) {
                 allShapes.add(String.valueOf(mCurrentPath.id));
+                onDrawingStateChangedWithStroke(false);
             }
             mCurrentPath = null;
         }
-        onDrawingStateChangedWithStroke(false);
     }
 
     @Override
@@ -1220,12 +1222,12 @@ public class ImageEditor extends View {
                 boolean inProgress = measurementEntity.addPoint(e.getX(), e.getY());
                 if (inProgress) {
                     invalidateCanvas(true);
+                    onDrawingStateChanged();
                 } else {
                     // Select measurement tool to have possibility to continue drawing
                     onDrawingStateChanged();
                     clearCurrentShape();
                 }
-                onDrawingStateChanged();
             } else {
                 // Update mSelectedEntity.
                 // Fires onShapeSelectionChanged (JS-PanResponder enabling/disabling)

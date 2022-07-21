@@ -359,7 +359,9 @@
 
         [self setFrozenImageNeedsUpdate];
         [self setNeedsDisplayInRect:updateRect];
-        [self onDrawingStateChangedWithStroke:true];
+        if ([_currentPath.points count] > 0){
+            [self onDrawingStateChangedWithStroke:true];
+        }
     }
 }
 
@@ -369,10 +371,11 @@
     }
     if ([_currentPath.points count] > 0) {
         [_allShapes addObject:@(_currentPath.pathId).stringValue];
+        [self onDrawingStateChangedWithStroke:false];
     }
     _currentPath = nil;
     [self notifyPathsUpdate];
-    [self onDrawingStateChangedWithStroke:false];
+
 }
 
 - (void) clear {
