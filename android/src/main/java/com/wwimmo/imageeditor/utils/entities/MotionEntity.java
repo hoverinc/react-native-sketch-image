@@ -16,6 +16,8 @@ import com.wwimmo.imageeditor.utils.Utility;
 import com.wwimmo.imageeditor.utils.entities.BorderStyle;
 import com.wwimmo.imageeditor.utils.layers.Layer;
 
+import java.util.UUID;
+
 @SuppressWarnings({"WeakerAccess"})
 public abstract class MotionEntity {
 
@@ -73,9 +75,12 @@ public abstract class MotionEntity {
     @NonNull
     private BorderStyle borderStyle = BorderStyle.DASHED;
 
+    private String id;
+
     public MotionEntity(@NonNull Layer layer,
                         @IntRange(from = 1) int canvasWidth,
                         @IntRange(from = 1) int canvasHeight) {
+        id = UUID.randomUUID().toString();
         this.layer = layer;
         this.canvasWidth = canvasWidth;
         this.canvasHeight = canvasHeight;
@@ -298,5 +303,10 @@ public abstract class MotionEntity {
 
 
     public abstract String getShapeType();
+
+
+    public String getId(){
+        return id;
+    }
 
 }

@@ -66,10 +66,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class ImageEditor extends View {
+
+    private final List<String> allShapes = new ArrayList();
     // Data
     private final ArrayList<SketchData> mPaths = new ArrayList<SketchData>();
     private SketchData mCurrentPath = null;
@@ -179,7 +182,9 @@ public class ImageEditor extends View {
      * Canvas/Draw related code
      **/
     public void clear() {
+        allShapes.clear();
         mPaths.clear();
+        mEntities.clear();
         mCurrentPath = null;
         mNeedsFullRedraw = true;
         invalidateCanvas(true);
@@ -210,6 +215,7 @@ public class ImageEditor extends View {
                 mCurrentPath.drawLastPoint(mDrawingCanvas);
             }
             invalidate(updateRect);
+            onDrawingStateChangedWithStroke(true);
         }
     }
 
@@ -243,6 +249,7 @@ public class ImageEditor extends View {
         int index = -1;
         for (int i = 0; i < mPaths.size(); i++) {
             if (mPaths.get(i).id == id) {
+                allShapes.remove(String.valueOf(mPaths.get(i).id));
                 index = i;
                 break;
             }
@@ -252,6 +259,7 @@ public class ImageEditor extends View {
             mPaths.remove(index);
             mNeedsFullRedraw = true;
             invalidateCanvas(true);
+            onDrawingStateChanged();
         }
     }
 
@@ -261,8 +269,13 @@ public class ImageEditor extends View {
                 mCurrentPath.draw(mDrawingCanvas);
                 mTranslucentDrawingCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
             }
+            // Save only path with points
+            if (mCurrentPath.points.size() > 0 ) {
+                allShapes.add(String.valueOf(mCurrentPath.id));
+            }
             mCurrentPath = null;
         }
+        onDrawingStateChangedWithStroke(false);
     }
 
     @Override
@@ -704,6 +717,7 @@ public class ImageEditor extends View {
         boolean shouldContinue = measurementEntity != null &&  measurementEntity.isTextStep() && shapeType == EntityType.TEXT;
         if (measurementEntity != null && !shouldContinue) {
             mEntities.remove(measurementEntity);
+            allShapes.remove(measurementEntity.getId());
             measurementEntity = null;
             mSelectedEntity = null;
         }
@@ -907,6 +921,7 @@ public class ImageEditor extends View {
             initEntityBorder(entity);
             initialTranslateAndScale(entity);
             mEntities.add(entity);
+            allShapes.add(entity.getId());
             onShapeSelectionChanged(entity);
             selectEntity(entity);
             onDrawingStateChanged();
@@ -989,9 +1004,12 @@ public class ImageEditor extends View {
 
     private void updateSelectionOnTap(MotionEvent e) {
         MotionEntity entity = findEntityAtPoint(e.getX(), e.getY());
+        boolean shouldNotifyChanges = mSelectedEntity != entity;
         onShapeSelectionChanged(entity);
         selectEntity(entity);
-        onDrawingStateChanged();
+        if (shouldNotifyChanges) {
+            onDrawingStateChanged();
+        }
     }
 
     public void releaseSelectedEntity() {
@@ -1020,6 +1038,7 @@ public class ImageEditor extends View {
         if (toRemoveEntity != null) {
             measurementEntity = null;
             toRemoveEntity.setIsSelected(false);
+            allShapes.remove(toRemoveEntity.getId());
             if (mEntities.remove(toRemoveEntity)) {
                 toRemoveEntity.release();
                 mSelectedEntity = null;
@@ -1029,10 +1048,27 @@ public class ImageEditor extends View {
         }
     }
 
+    private boolean isPathId(String id) {
+        if (id == null) {
+            return false;
+        }
+        try {
+            Integer.parseInt(id);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public void undo() {
         MotionEntity toRemove = null;
+        String toRemoveId = null;
         if (mSelectedEntity == null) {
-            if (mEntities.size() > 0) {
+            if (allShapes.size() > 0) {
+                toRemoveId = allShapes.get(allShapes.size() - 1);
+            }
+
+            if (mEntities.size() > 0 && !isPathId(toRemoveId)) {
                 toRemove = mEntities.get(mEntities.size() - 1);
             }
         } else {
@@ -1050,6 +1086,9 @@ public class ImageEditor extends View {
                 onDrawingStateChanged(true);
                 invalidateCanvas(true);
             }
+        } else if (toRemoveId != null) {
+            // Remove from path
+            deletePath(Integer.parseInt(toRemoveId));
         }
     }
 
@@ -1097,10 +1136,14 @@ public class ImageEditor extends View {
         onDrawingStateChanged(false);
     }
 
+    private boolean canUndo() {
+        return allShapes.size() > 0;
+    }
+
     private void onDrawingStateChanged(boolean fromUndo) {
         WritableMap event = Arguments.createMap();
         // shapes size >0
-        event.putBoolean("canUndo", mEntities.size() > 0);
+        event.putBoolean("canUndo", canUndo());
 
         if (mSelectedEntity == null) {
             event.putBoolean("canDelete", false);
@@ -1115,6 +1158,24 @@ public class ImageEditor extends View {
             event.putInt("drawingStep", mSelectedEntity.getDrawingStep());
         }
 
+        mContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                getId(),
+                "topChange",
+                event);
+
+    }
+
+    private void onDrawingStateChangedWithStroke(boolean pointerDown) {
+        if (mSelectedEntity != null) {
+            return;
+        }
+        WritableMap event = Arguments.createMap();
+        // shapes size >0
+        event.putBoolean("canUndo", canUndo());
+
+        event.putBoolean("canDelete", false);
+        event.putString("shapeType", "stroke");
+        event.putInt("drawingStep", pointerDown ? 0 : 1);
         mContext.getJSModule(RCTEventEmitter.class).receiveEvent(
                 getId(),
                 "topChange",
@@ -1168,6 +1229,8 @@ public class ImageEditor extends View {
                 if (inProgress) {
                     invalidateCanvas(true);
                 } else {
+                    // Select measurement tool to have possibility to continue drawing
+                    onDrawingStateChanged();
                     clearCurrentShape();
                 }
                 onDrawingStateChanged();

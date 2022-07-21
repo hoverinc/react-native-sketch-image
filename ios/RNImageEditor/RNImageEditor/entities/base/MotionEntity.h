@@ -32,6 +32,7 @@ static const int DEFAULT_DRAWING_STEP = -1 ;
 @property (nonatomic) UIColor* borderStrokeColor;
 @property (nonatomic) CGFloat entityStrokeWidth;
 @property (nonatomic) UIColor* entityStrokeColor;
+@property (nonatomic) NSString* entityId;
 
 
 - (instancetype)initAndSetupWithParent: (NSInteger)parentWidth
@@ -62,5 +63,6 @@ static const int DEFAULT_DRAWING_STEP = -1 ;
 - (BOOL)undo;
 - (int)getDrawingStep;
 - (NSString *)getShapeType;
+- (NSString *)getEntityId;
 
 @end
