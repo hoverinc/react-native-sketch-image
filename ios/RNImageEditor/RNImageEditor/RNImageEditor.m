@@ -341,6 +341,7 @@
         _needsFullRedraw = YES;
         [self setNeedsDisplay];
         [self notifyPathsUpdate];
+        [self onDrawingStateChanged];
     }
 }
 
@@ -609,7 +610,7 @@
 }
 
 - (void)addEntity:(NSString *)entityType textShapeFontType:(NSString *)textShapeFontType textShapeFontSize:(NSNumber *)textShapeFontSize textShapeText:(NSString *)textShapeText imageShapeAsset:(NSString *)imageShapeAsset {
-    
+
     if (_measurementEntity != nil) {
         [[self motionEntities] removeObject:_measurementEntity];
         [_allShapes removeObject:_measurementEntity.entityId];

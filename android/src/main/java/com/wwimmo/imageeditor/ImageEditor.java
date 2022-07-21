@@ -259,6 +259,7 @@ public class ImageEditor extends View {
             mPaths.remove(index);
             mNeedsFullRedraw = true;
             invalidateCanvas(true);
+            onDrawingStateChanged();
         }
     }
 
