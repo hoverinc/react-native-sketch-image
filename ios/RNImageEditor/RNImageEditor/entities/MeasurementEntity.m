@@ -214,4 +214,13 @@ int selectedPosition;
     return @"MeasurementTool";
 }
 
+- (void)addText:(NSString *)text withTextSize:(NSNumber *)fontSize {
+// TODO
+}
+
+- (BOOL)isTextStep {
+    // TODO
+    return false;
+}
+
 @end

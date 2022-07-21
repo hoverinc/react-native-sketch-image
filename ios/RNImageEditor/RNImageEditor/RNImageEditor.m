@@ -610,8 +610,10 @@
 }
 
 - (void)addEntity:(NSString *)entityType textShapeFontType:(NSString *)textShapeFontType textShapeFontSize:(NSNumber *)textShapeFontSize textShapeText:(NSString *)textShapeText imageShapeAsset:(NSString *)imageShapeAsset {
+    
+    bool shouldContinue = _measurementEntity != nil && entityType == @"Text" && [_measurementEntity isTextStep];
 
-    if (_measurementEntity != nil) {
+    if (_measurementEntity != nil && !shouldContinue) {
         [[self motionEntities] removeObject:_measurementEntity];
         [_allShapes removeObject:_measurementEntity.entityId];
         [_measurementEntity removeFromSuperview];
@@ -633,7 +635,14 @@
             [self addArrowEntity];
             break;
         case 5:
-            [self addTextEntity:textShapeFontType withFontSize:textShapeFontSize withText:textShapeText];
+            if (shouldContinue) {
+                [_measurementEntity addText:textShapeText withTextSize:textShapeFontSize];
+                [self onDrawingStateChanged];
+                [self setNeedsDisplay];
+                [self unselectShape];
+            } else {
+                [self addTextEntity:textShapeFontType withFontSize:textShapeFontSize withText:textShapeText];
+            }
             break;
         case 6:
             // TODO: ImageEntity Doesn't exist yet

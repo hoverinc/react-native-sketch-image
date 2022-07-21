@@ -23,6 +23,8 @@
 - (BOOL)addPoint:(CGPoint)point;
 
 - (BOOL)isPointInEntity:(CGPoint)point;
+- (void)addText:(NSString *)text withTextSize:(NSNumber *)fontSize;
+- (BOOL)isTextStep;
 
 @end
 
