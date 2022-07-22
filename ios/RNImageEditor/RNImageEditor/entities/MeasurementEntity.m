@@ -15,7 +15,7 @@
 
 int MAX_POINTS_COUNT = 2;
 int DEFAULT_SELECTED_POSITION = -1;
-int TEXT_PADDING = 8;
+int TEXT_PADDING = 12;
 float pointSize = 22;
 float touchPointSize = 50;
 int selectedPosition;
@@ -214,7 +214,7 @@ int selectedPosition;
 
 - (NSInteger)getDrawingStep {
     // If point is selected or text added - them drawing has finished
-    if (selectedPosition != DEFAULT_SELECTED_POSITION || [self text] != nil) return DEFAULT_DRAWING_STEP;
+    if (selectedPosition != DEFAULT_SELECTED_POSITION) return DEFAULT_DRAWING_STEP;
     if ([points count] < MAX_POINTS_COUNT) {
         return [points count];
     }else {
@@ -277,7 +277,7 @@ int selectedPosition;
 
 - (void)drawText:(CGContextRef)contextRef withCenterPoint:(CGPoint)centerPoint {
     
-    self.textAttributes = @{
+     self.textAttributes = @{
                             NSFontAttributeName: self.font,
                             NSForegroundColorAttributeName: [UIColor whiteColor],
                             NSParagraphStyleAttributeName: self.style
@@ -285,13 +285,19 @@ int selectedPosition;
 
     
     CGRect textRect = CGRectMake(
-                                 centerPoint.x - self.textSize.width/2 - TEXT_PADDING,
+                                 centerPoint.x - self.textSize.width/2,
                                  centerPoint.y - self.textSize.height/2,
-                                 self.textSize.width + 2 * TEXT_PADDING,
+                                 self.textSize.width,
                                  self.textSize.height
                                  );
     // draw background
-    UIBezierPath *roundedRect = [UIBezierPath bezierPathWithRoundedRect:textRect cornerRadius: 4];
+    CGRect rectWthPadding = CGRectMake(
+                                       centerPoint.x - self.textSize.width/2 - TEXT_PADDING,
+                                       centerPoint.y - self.textSize.height/2 - TEXT_PADDING /2,
+                                       self.textSize.width + 2 * TEXT_PADDING,
+                                       self.textSize.height + TEXT_PADDING
+                                       );
+    UIBezierPath *roundedRect = [UIBezierPath bezierPathWithRoundedRect:rectWthPadding cornerRadius: 4];
     [roundedRect fillWithBlendMode: kCGBlendModeNormal alpha:1.0f];
     [self.entityStrokeColor setFill];
     [roundedRect fill];

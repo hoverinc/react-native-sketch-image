@@ -646,6 +646,7 @@
                 [self setNeedsDisplay];
                 _measurementEntity = nil;
                 [self unselectShape];
+                [self onDrawingStateChanged];
             } else {
                 [self addTextEntity:textShapeFontType withFontSize:textShapeFontSize withText:textShapeText];
             }
@@ -976,6 +977,7 @@
                 _measurementEntity = nil;
                 [self unselectShape];
                 [self onShapeSelectionChanged:nil];
+                [self onDrawingStateChanged];
             }
             [self onDrawingStateChanged];
         } else {
