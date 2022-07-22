@@ -613,8 +613,10 @@
 }
 
 - (void)addEntity:(NSString *)entityType textShapeFontType:(NSString *)textShapeFontType textShapeFontSize:(NSNumber *)textShapeFontSize textShapeText:(NSString *)textShapeText imageShapeAsset:(NSString *)imageShapeAsset {
-    
-    bool shouldContinue = _measurementEntity != nil && entityType == @"Text" && [_measurementEntity isTextStep];
+    bool hasMeasurement  = _measurementEntity != nil;
+    bool hasTextType = [@"Text" isEqual:entityType];
+    bool hasTextStep =_measurementEntity.isTextStep;
+    BOOL shouldContinue = hasMeasurement && hasTextType && hasTextStep;
 
     if (_measurementEntity != nil && !shouldContinue) {
         [[self motionEntities] removeObject:_measurementEntity];
@@ -639,9 +641,10 @@
             break;
         case 5:
             if (shouldContinue) {
-                [_measurementEntity addText:textShapeText withTextSize:textShapeFontSize];
+                [_measurementEntity addText:textShapeText withTextSize:textShapeFontSize withFontType:textShapeFontType];
                 [self onDrawingStateChanged];
                 [self setNeedsDisplay];
+                _measurementEntity = nil;
                 [self unselectShape];
             } else {
                 [self addTextEntity:textShapeFontType withFontSize:textShapeFontSize withText:textShapeText];

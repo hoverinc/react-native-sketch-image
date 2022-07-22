@@ -15,6 +15,7 @@
 
 int MAX_POINTS_COUNT = 2;
 int DEFAULT_SELECTED_POSITION = -1;
+int TEXT_PADDING = 8;
 float pointSize = 22;
 float touchPointSize = 50;
 int selectedPosition;
@@ -75,6 +76,13 @@ int selectedPosition;
                 NSValue *preVal = [points objectAtIndex:i - 1];
                 CGPoint prevPoint = [preVal CGPointValue];
                 [self drawConnection:contextRef withStartPoint:prevPoint withEndPoint:p];
+                
+                // draw text
+                if (i == 1 && [self text] != nil) {
+                    CGPoint centerPoint = CGPointMake(
+                                                      (prevPoint.x + p.x)/2, (prevPoint.y + p.y)/2);
+                    [self drawText:contextRef withCenterPoint:centerPoint];
+                }
             }
             // draw actual point
             [self drawPoint:contextRef withPoint:p];
@@ -87,11 +95,12 @@ int selectedPosition;
 }
 
 - (BOOL)addPoint:(CGPoint)point {
+    
     if ([points count] < MAX_POINTS_COUNT) {
         [points addObject: [NSValue valueWithCGPoint:point]];
-        return [points count] < MAX_POINTS_COUNT;
+        return [points count] < MAX_POINTS_COUNT || [self text] == nil;
     }
-    return false;
+    return [self text] == nil;
 }
 
 - (BOOL)isPointInEntity:(CGPoint)point {
@@ -186,6 +195,10 @@ int selectedPosition;
 }
 
 - (BOOL)undo {
+    if ([self text] != nil){
+        self.text = nil;
+        return true;
+    }
     NSUInteger currentCount = [points count];
     if (currentCount > 0) {
         [points removeLastObject];
@@ -200,13 +213,13 @@ int selectedPosition;
 
 
 - (NSInteger)getDrawingStep {
-    // If point is selected - them drawing has finished
-    if (selectedPosition != DEFAULT_SELECTED_POSITION) return DEFAULT_DRAWING_STEP;
-        if ([points count] < MAX_POINTS_COUNT) {
-            return [points count];
-        }else {
-            return [points count] + 1;
-        }
+    // If point is selected or text added - them drawing has finished
+    if (selectedPosition != DEFAULT_SELECTED_POSITION || [self text] != nil) return DEFAULT_DRAWING_STEP;
+    if ([points count] < MAX_POINTS_COUNT) {
+        return [points count];
+    }else {
+        return [points count] + ([self text] != nil ? 1 : 0);
+    }
     return DEFAULT_DRAWING_STEP;
 }
 
@@ -214,13 +227,77 @@ int selectedPosition;
     return @"MeasurementTool";
 }
 
-- (void)addText:(NSString *)text withTextSize:(NSNumber *)fontSize {
-// TODO
+- (void)addText:(NSString *)text withTextSize:(NSNumber *)fontSize withFontType:(NSString *)fontType {
+    self.text = text;
+    
+    // Let's calculate the initial texts single line width here
+    NSMutableParagraphStyle *style = [[NSParagraphStyle defaultParagraphStyle] mutableCopy];
+    [style setAlignment:NSTextAlignmentCenter];
+    [style setLineHeightMultiple:1.05];
+    UIFont *font = [UIFont systemFontOfSize: [fontSize floatValue]];
+    if (fontType) {
+        font = [UIFont fontWithName: fontType size: [fontSize floatValue]];
+    }
+    NSDictionary *textAttributes = @{
+                            NSFontAttributeName: font,
+                            NSForegroundColorAttributeName: [UIColor whiteColor],
+                            NSParagraphStyleAttributeName: style
+                            };
+    CGRect initialTextRect = [text boundingRectWithSize:CGSizeMake([self parentWidth], CGFLOAT_MAX)
+                              
+                                              options:NSStringDrawingUsesLineFragmentOrigin
+                                           attributes:textAttributes
+                                              context:nil];
+    self.style = [[NSParagraphStyle defaultParagraphStyle] mutableCopy];
+    [self.style setAlignment:NSTextAlignmentCenter];
+    [self.style setLineHeightMultiple:1.05];
+    self.fontSize = [fontSize floatValue];
+    self.fontType = fontType;
+    self.font = [UIFont systemFontOfSize: self.fontSize];
+    if (self.fontType) {
+        self.font = [UIFont fontWithName: self.fontType size: self.fontSize];
+    }
+    self.textAttributes = @{
+                            NSFontAttributeName: self.font,
+                            NSForegroundColorAttributeName: self.entityStrokeColor,
+                            NSParagraphStyleAttributeName: self.style
+                            };
+    CGRect textRect = [self.text boundingRectWithSize:CGSizeMake(self.bounds.size.width, CGFLOAT_MAX)
+                                              options:NSStringDrawingUsesLineFragmentOrigin
+                                           attributes:self.textAttributes
+                                              context:nil];
+    self.textSize = textRect.size;
+    
 }
 
-- (BOOL)isTextStep {
-    // TODO
-    return false;
+- (BOOL)isTextStep{
+    return [self getDrawingStep] == MAX_POINTS_COUNT;
 }
+
+
+- (void)drawText:(CGContextRef)contextRef withCenterPoint:(CGPoint)centerPoint {
+    
+    self.textAttributes = @{
+                            NSFontAttributeName: self.font,
+                            NSForegroundColorAttributeName: [UIColor whiteColor],
+                            NSParagraphStyleAttributeName: self.style
+                            };
+
+    
+    CGRect textRect = CGRectMake(
+                                 centerPoint.x - self.textSize.width/2 - TEXT_PADDING,
+                                 centerPoint.y - self.textSize.height/2,
+                                 self.textSize.width + 2 * TEXT_PADDING,
+                                 self.textSize.height
+                                 );
+    // draw background
+    UIBezierPath *roundedRect = [UIBezierPath bezierPathWithRoundedRect:textRect cornerRadius: 4];
+    [roundedRect fillWithBlendMode: kCGBlendModeNormal alpha:1.0f];
+    [self.entityStrokeColor setFill];
+    [roundedRect fill];
+
+    [self.text drawInRect:textRect withAttributes:self.textAttributes];
+}
+
 
 @end
