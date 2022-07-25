@@ -11,6 +11,8 @@ import android.graphics.RectF;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
 
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
@@ -56,6 +58,7 @@ public class MeasureToolEntity extends MotionEntity {
         currentPoints = new ArrayList<>();
         updateEntity(false);
         mTextPaint = new TextPaint();
+        mTextPaint.setAntiAlias(true);
     }
 
     private void updateEntity(boolean moveToPreviousCenter) {
@@ -168,7 +171,7 @@ public class MeasureToolEntity extends MotionEntity {
 
         Rect textRect = new Rect();
         textPaint.getTextBounds(text, 0, text.length(), textRect);
-        int textWidth = textRect.width();
+        int textWidth = textRect.width() + 2;
         StaticLayout sl = new StaticLayout(
                 text,
                 textPaint,
@@ -355,20 +358,17 @@ public class MeasureToolEntity extends MotionEntity {
         }
     }
 
-    public int getTextStep() {
-        return currentPoints.size();
-    }
-
-
     public boolean isTextStep() {
-        return getDrawingStep() == getTextStep();
+        return getDrawingStep() == POINTS_COUNT;
     }
 
 
-    public void addText(String text, int fontSize) {
+    public void addText(String text, int fontSize, DisplayMetrics displayMetrics) {
         mCurrentText = text;
+        float realFontSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, fontSize,
+                displayMetrics);
         mTextPaint.setStyle(Paint.Style.FILL);
-        mTextPaint.setTextSize(fontSize);
+        mTextPaint.setTextSize(realFontSize);
         mTextPaint.setColor(Color.WHITE);
     }
 }

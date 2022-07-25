@@ -1,5 +1,5 @@
 import React from "react";
-import { Alert, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Platform, Text, TouchableOpacity, View } from "react-native";
 import { ImageEditor } from "@hoverinc/react-native-sketch-canvas";
 
 
@@ -19,7 +19,7 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
             <Text style={{ color: "white" }}>Tool</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.functionButton} onPress={() => {
-            canvas.current.addShape({ shapeType: "Text", textShapeText : 'WWW', textShapeFontSize: 20 });
+            canvas.current.addShape({ shapeType: "Text", textShapeText : 'WWW WW', textShapeFontSize: Platform.OS === 'ios' ? 20 : 14});
           }}>
             <Text style={{ color: "white" }}>Text</Text>
           </TouchableOpacity>

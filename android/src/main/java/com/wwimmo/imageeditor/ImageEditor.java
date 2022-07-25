@@ -729,7 +729,7 @@ public class ImageEditor extends View {
                 break;
             case TEXT:
                 if (shouldContinue) {
-                    measurementEntity.addText(textShapeText, textShapeFontSize);
+                    measurementEntity.addText(textShapeText, textShapeFontSize,  getContext().getResources().getDisplayMetrics());
                     onDrawingStateChanged();
                     invalidateCanvas(true);
                     clearCurrentShape();
