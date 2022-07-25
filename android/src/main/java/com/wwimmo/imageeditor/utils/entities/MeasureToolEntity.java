@@ -72,7 +72,7 @@ public class MeasureToolEntity extends MotionEntity {
         float heightAspect = 1.0F * canvasHeight / this.mBitmap.getHeight();
 
         // fit the smallest size
-        holyScale = Math.min(widthAspect, heightAspect);
+        holyScale = Math.max(widthAspect, heightAspect);
 
         // initial position of the entity
         srcPoints[0] = 0;
