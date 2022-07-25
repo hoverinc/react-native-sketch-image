@@ -1005,7 +1005,10 @@ public class ImageEditor extends View {
     }
 
     private void updateSelectionOnTap(MotionEvent e) {
-        MotionEntity entity = findEntityAtPoint(e.getX(), e.getY());
+        updateSelectionOnTap(e.getX(), e.getY());
+    }
+    private void updateSelectionOnTap(float x, float y) {
+        MotionEntity entity = findEntityAtPoint(x, y);
         boolean shouldNotifyChanges = mSelectedEntity != entity;
         onShapeSelectionChanged(entity);
         selectEntity(entity);
@@ -1211,10 +1214,16 @@ public class ImageEditor extends View {
         }
     };
 
+
     private class TapsListener extends GestureDetector.SimpleOnGestureListener {
         @Override
         public boolean onDoubleTap(MotionEvent e) {
             return mSelectedEntity != null;
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            return super.onDown(e);
         }
 
         @Override
@@ -1241,6 +1250,7 @@ public class ImageEditor extends View {
                 // Fires onShapeSelectionChanged (JS-PanResponder enabling/disabling)
                 updateSelectionOnTap(e);
             }
+
             return true;
         }
     }
@@ -1271,13 +1281,34 @@ public class ImageEditor extends View {
     }
 
     private class MoveListener extends MoveGestureDetector.SimpleOnMoveGestureListener {
+
+        boolean shouldStartMove () {
+            return mSelectedEntity == null || (mSelectedEntity instanceof MeasureToolEntity && mSelectedEntity.getDrawingStep() == MotionEntity.DEFAULT_DRAWING_STEP);
+        }
+
+        @Override
+        public boolean onMoveBegin(MoveGestureDetector detector) {
+            MotionEvent startEvent = detector.getPrevEvent();
+            if (shouldStartMove() && startEvent != null) {
+                // Try to select shape on the start of the move
+                updateSelectionOnTap(startEvent.getX(), startEvent.getY());
+            }
+            return true;
+        }
+
         @Override
         public boolean onMove(MoveGestureDetector detector) {
             if (mSelectedEntity != null) {
                 handleTranslate(detector.getFocusDelta());
                 return true;
             }
-            return measurementEntity != null;
+            return false;
+        }
+
+        @Override
+        public void onMoveEnd(MoveGestureDetector detector) {
+            // Left item selected
+            super.onMoveEnd(detector);
         }
     }
 }
