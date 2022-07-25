@@ -38,6 +38,7 @@ public class MeasureToolEntity extends MotionEntity {
     private PointF selectedPoint;
     private String mCurrentText;
     private final TextPaint mTextPaint;
+    private float mScaledDensity;
 
     private static final int POINTS_COUNT = 2;
     private static final int MAX_DRAWING_STEPS = POINTS_COUNT + 1;
@@ -165,13 +166,13 @@ public class MeasureToolEntity extends MotionEntity {
         return new PointF(x, y);
     }
 
-    private static void drawText(PointF a, PointF b, Canvas canvas, TextPaint textPaint, Paint bgPaint, String text) {
+    private void drawText(PointF a, PointF b, Canvas canvas, TextPaint textPaint, Paint bgPaint, String text) {
         float centerX = (a.x + b.x) / 2;
         float centerY = (a.y + b.y) / 2;
 
         Rect textRect = new Rect();
         textPaint.getTextBounds(text, 0, text.length(), textRect);
-        int textWidth = textRect.width() + 2;
+        int textWidth = (int) (textRect.width()  + Math.min(2 , mScaledDensity * 2));
         StaticLayout sl = new StaticLayout(
                 text,
                 textPaint,
@@ -370,5 +371,6 @@ public class MeasureToolEntity extends MotionEntity {
         mTextPaint.setStyle(Paint.Style.FILL);
         mTextPaint.setTextSize(realFontSize);
         mTextPaint.setColor(Color.WHITE);
+        mScaledDensity = displayMetrics.scaledDensity;
     }
 }
