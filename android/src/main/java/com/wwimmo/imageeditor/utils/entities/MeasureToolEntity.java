@@ -72,7 +72,7 @@ public class MeasureToolEntity extends MotionEntity {
         float heightAspect = 1.0F * canvasHeight / this.mBitmap.getHeight();
 
         // fit the smallest size
-        holyScale = Math.max(widthAspect, heightAspect);
+        holyScale = Math.min(widthAspect, heightAspect);
 
         // initial position of the entity
         srcPoints[0] = 0;
@@ -172,7 +172,7 @@ public class MeasureToolEntity extends MotionEntity {
 
         Rect textRect = new Rect();
         textPaint.getTextBounds(text, 0, text.length(), textRect);
-        int textWidth = (int) (textRect.width()  + Math.min(2 , mScaledDensity * 2));
+        int textWidth = (int) (textRect.width()  + Math.max(2 , mScaledDensity * 2));
         StaticLayout sl = new StaticLayout(
                 text,
                 textPaint,
