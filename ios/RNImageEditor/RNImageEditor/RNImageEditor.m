@@ -997,8 +997,17 @@
     }
 }
 
+-(BOOL)shouldStartMove {
+    return self.selectedEntity == nil || ([self.selectedEntity class] == [MeasurementEntity class] && self.selectedEntity.getDrawingStep == -1);
+}
+
 - (void)handleMove:(UIPanGestureRecognizer *)sender {
     UIGestureRecognizerState state = [sender state];
+    if (state == UIGestureRecognizerStateBegan && [self shouldStartMove]) {
+        // select shape
+        CGPoint tapLocation = [sender locationInView:sender.view];
+        [self updateSelectionOnTapWithLocationPoint:tapLocation];
+    }
     if (self.selectedEntity && _measurementEntity == nil) {
         if (state != UIGestureRecognizerStateCancelled) {
             [self.selectedEntity moveEntityTo:[sender translationInView:self.selectedEntity]];
