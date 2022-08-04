@@ -851,10 +851,10 @@
 - (void)updateSelectionOnTapWithLocationPoint:(CGPoint)tapLocation {
     MotionEntity *nextEntity = [self findEntityAtPointX:tapLocation.x andY:tapLocation.y];
     // Protect from calling wrong events during drawing stroke
-    bool sholdCallStateChanged = (self.selectedEntity == nil && nextEntity == nil) || self.selectedEntity != nextEntity;
+    bool shouldCallStateChanged = self.selectedEntity != nextEntity;
     [self onShapeSelectionChanged:nextEntity];
     [self selectEntity:nextEntity];
-    if (sholdCallStateChanged) {
+    if (shouldCallStateChanged) {
         [self onDrawingStateChanged];
     }
 }
