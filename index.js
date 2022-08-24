@@ -1,6 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
-import ReactNative, { View, Text, TouchableOpacity, FlatList, ViewPropTypes } from "react-native";
+import ReactNative, { View, Text, TouchableOpacity, FlatList } from "react-native";
+import { ViewPropTypes } from "deprecated-react-native-prop-types";
 import ImageEditor from "./src/ImageEditor";
 import { requestPermissions } from "./src/handlePermissions";
 

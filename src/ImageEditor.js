@@ -3,15 +3,15 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactNative, {
-    requireNativeComponent,
     NativeModules,
-    UIManager,
     PanResponder,
     PixelRatio,
     Platform,
-    ViewPropTypes,
-    processColor
+    processColor,
+    requireNativeComponent,
+    UIManager
 } from "react-native";
+import { ViewPropTypes } from "deprecated-react-native-prop-types";
 import { requestPermissions } from "./handlePermissions";
 
 const RNImageEditor = requireNativeComponent("RNImageEditor", ImageEditor, {
@@ -74,12 +74,18 @@ class ImageEditor extends React.Component {
         style: null,
         strokeColor: "#000000",
         strokeWidth: 3,
-        onPathsChange: () => {},
-        onStrokeStart: () => {},
-        onStrokeChanged: () => {},
-        onStrokeEnd: () => {},
-        onSketchSaved: () => {},
-        onShapeSelectionChanged: () => {},
+        onPathsChange: () => {
+        },
+        onStrokeStart: () => {
+        },
+        onStrokeChanged: () => {
+        },
+        onStrokeEnd: () => {
+        },
+        onSketchSaved: () => {
+        },
+        onShapeSelectionChanged: () => {
+        },
         shapeConfiguration: {
             shapeBorderColor: "transparent",
             shapeBorderStyle: "Dashed",
@@ -98,7 +104,7 @@ class ImageEditor extends React.Component {
         permissionDialogTitle: "",
         permissionDialogMessage: "",
 
-        defaultPaths: [],
+        defaultPaths: []
     };
 
     state = {
@@ -158,9 +164,9 @@ class ImageEditor extends React.Component {
 
     undoShape() {
         UIManager.dispatchViewManagerCommand(
-          this._handle,
-          UIManager.getViewManagerConfig(RNImageEditor).Commands.undoShape,
-          []
+            this._handle,
+            UIManager.getViewManagerConfig(RNImageEditor).Commands.undoShape,
+            []
         );
     }
 
@@ -179,7 +185,7 @@ class ImageEditor extends React.Component {
                 return `${(coor[0] * this._screenScale * this._size.width) / data.size.width},${(coor[1] *
                     this._screenScale *
                     this._size.height) /
-                    data.size.height}`;
+                data.size.height}`;
             });
             UIManager.dispatchViewManagerCommand(
                 this._handle,
@@ -188,7 +194,7 @@ class ImageEditor extends React.Component {
             );
         } else {
             this._pathsToProcess.filter((p) => p.path.id === data.path.id).length === 0 &&
-                this._pathsToProcess.push(data);
+            this._pathsToProcess.push(data);
         }
     }
 
@@ -396,11 +402,11 @@ class ImageEditor extends React.Component {
                         this.props.onShapeSelectionChanged(e.nativeEvent.isShapeSelected);
                     } else if (e.nativeEvent.hasOwnProperty("canUndo")) {
                         this.props.onDrawingStateChanged({
-                            canUndo : e.nativeEvent.canUndo,
-                            canDelete : e.nativeEvent.canDelete,
-                            shapeType : e.nativeEvent.shapeType,
-                            drawingStep : e.nativeEvent.drawingStep,
-                        })
+                            canUndo: e.nativeEvent.canUndo,
+                            canDelete: e.nativeEvent.canDelete,
+                            shapeType: e.nativeEvent.shapeType,
+                            drawingStep: e.nativeEvent.drawingStep
+                        });
                     }
                 }}
                 localSourceImage={this.props.localSourceImage}
