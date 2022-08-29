@@ -32,6 +32,7 @@
     UIImage *_backgroundImage;
     UIImage *_backgroundImageScaled;
     NSString *_backgroundImageContentMode;
+    NSString *_currentFilePath;
 
     NSArray *_arrTextOnSketch, *_arrSketchOnText;
 }
@@ -216,6 +217,7 @@
             _backgroundImage = image;
             _backgroundImageScaled = nil;
             _backgroundImageContentMode = mode;
+            _currentFilePath = filename;
             [self setNeedsDisplay];
 
             return YES;
@@ -510,7 +512,7 @@
         if (error == nil) {
             NSURL *fileURL = [[tempDir URLByAppendingPathComponent: filename] URLByAppendingPathExtension: type];
             NSData *imageData = [self getImageData:img type:type];
-            [imageData writeToURL:fileURL atomically:YES];
+            [self saveImageWithMetadata:imageData fileURL:fileURL];
 
             if (_onChange) {
                 _onChange(@{ @"success": @YES, @"path": [fileURL path]});
@@ -526,6 +528,34 @@
         }
         UIImageWriteToSavedPhotosAlbum(img, self, @selector(image:didFinishSavingWithError:contextInfo:), nil);
     }
+}
+
+- (void)saveImageWithMetadata:(NSData *)imageData fileURL:(NSURL*)fileURL
+{
+    NSString *originalFileName = [_currentFilePath lastPathComponent];
+    CGImageSourceRef source = CGImageSourceCreateWithData((CFDataRef)imageData, NULL);
+
+    NSDictionary *metadataDict = (NSDictionary *) CFBridgingRelease(CGImageSourceCopyPropertiesAtIndex(source, 0, NULL));
+    NSDictionary *exifDict = [metadataDict objectForKey:(NSString *)kCGImagePropertyExifDictionary];
+
+    NSMutableDictionary *mutableMetadataDict = [metadataDict mutableCopy];
+    NSMutableDictionary *mutableExifDict = [exifDict mutableCopy];
+
+    [mutableExifDict setValue:originalFileName forKey:(NSString *)kCGImagePropertyExifImageUniqueID];
+    [mutableMetadataDict setObject:mutableExifDict forKey:(NSString *)kCGImagePropertyExifDictionary];
+
+    NSMutableData *destData = [NSMutableData data];
+    CGImageDestinationRef destination =
+        CGImageDestinationCreateWithData((CFMutableDataRef)destData,CGImageSourceGetType(source), 1, NULL);
+    CGImageDestinationAddImageFromSource(destination, source, 0, (CFDictionaryRef) mutableMetadataDict);
+    CGImageDestinationFinalize(destination);
+
+    [destData writeToURL:fileURL atomically:YES];
+
+    CFRelease(destination);
+    CFRelease(source);
+
+    _currentFilePath = nil;
 }
 
 - (UIImage *)scaleImage:(UIImage *)originalImage toSize:(CGSize)size contentMode: (NSString*)mode
