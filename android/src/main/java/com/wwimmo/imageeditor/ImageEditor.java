@@ -76,6 +76,7 @@ public class ImageEditor extends View {
     // Data
     private final ArrayList<SketchData> mPaths = new ArrayList<SketchData>();
     private SketchData mCurrentPath = null;
+    private String currentFilePath = null;
 
     // Gesture Detection
     private final ScaleGestureDetector mScaleGestureDetector;
@@ -186,6 +187,7 @@ public class ImageEditor extends View {
         mPaths.clear();
         mEntities.clear();
         mCurrentPath = null;
+        currentFilePath = null;
         mNeedsFullRedraw = true;
         invalidateCanvas(true);
     }
@@ -488,7 +490,10 @@ public class ImageEditor extends View {
                         format.equals("png") ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG,
                         format.equals("png") ? 100 : 90,
                         new FileOutputStream(createdFile));
-                this.onSaved(true, createdFile.getPath());
+                String path = createdFile.getPath();
+                this.onSaved(true, path);
+                this.updateExif(path);
+
                 success = true;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -505,6 +510,18 @@ public class ImageEditor extends View {
             copyToGallery(createdFile, folder, format);
         }
 
+    }
+
+    public void updateExif(String path) {
+        try {
+            File originalFile = new File(currentFilePath);
+
+            ExifInterface exif = new ExifInterface(path);
+            exif.setAttribute(ExifInterface.TAG_IMAGE_UNIQUE_ID, originalFile.getName());
+            exif.saveAttributes();
+        } catch (Exception e) {
+            Log.e("Update exif", "Failed to update exif!");
+        }
     }
 
     public void copyToGallery(File createdFile, String folder, String format) {
@@ -560,6 +577,7 @@ public class ImageEditor extends View {
 
     public boolean openImageFile(String filename, String directory, String mode) {
         if (filename != null) {
+            currentFilePath = filename;
             int res = mContext.getResources().getIdentifier(
                     filename.lastIndexOf('.') == -1 ? filename : filename.substring(0, filename.lastIndexOf('.')),
                     "drawable",
