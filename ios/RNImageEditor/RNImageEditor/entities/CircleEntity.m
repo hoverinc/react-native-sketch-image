@@ -65,4 +65,8 @@
     CGContextStrokeEllipseInRect(contextRef, circleRect);
 }
 
+- (NSString *)getShapeType {
+    return @"Circle";
+}
+
 @end

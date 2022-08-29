@@ -26,11 +26,11 @@ public class ArrowEntity extends MotionEntity {
 
     public ArrowEntity(@NonNull Layer layer,
                         @IntRange(from = 1) int canvasWidth,
-                        @IntRange(from = 1) int canvasHeight, 
+                        @IntRange(from = 1) int canvasHeight,
                         @IntRange(from = 1) int width,
                         @IntRange(from = 1) int height,
-                        @Nullable Float bordersPadding, 
-                        @Nullable Float strokeWidth, 
+                        @Nullable Float bordersPadding,
+                        @Nullable Float strokeWidth,
                         @Nullable Integer strokeColor) {
         super(layer, canvasWidth, canvasHeight);
 
@@ -102,7 +102,7 @@ public class ArrowEntity extends MotionEntity {
 
         float centerX = getLayer().getX() + halfWidth;
         float centerY = getLayer().getY() + halfHeight;
-        
+
         Path arrowPath = new Path();
 
         // Arrow with adjacents to centerY
@@ -127,7 +127,7 @@ public class ArrowEntity extends MotionEntity {
             this.mStrokeColor = paint.getColor();
             this.mStrokeWidth = paint.getStrokeWidth();
         }
-        
+
         this.mArrowPaint = new Paint();
         this.mArrowPaint.setColor(this.mStrokeColor);
         this.mArrowPaint.setStrokeWidth(this.mStrokeWidth / getLayer().getScale());
@@ -176,5 +176,10 @@ public class ArrowEntity extends MotionEntity {
         if (this.mArrowBitmap != null && !this.mArrowBitmap.isRecycled()) {
             this.mArrowBitmap.recycle();
         }
+    }
+
+    @Override
+    public String getShapeType() {
+        return EntityType.ARROW.label;
     }
 }

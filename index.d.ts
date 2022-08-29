@@ -21,6 +21,13 @@ type Path = {
     path: PathData;
 };
 
+type DrawingStateEvent = {
+    canUndo?: boolean;
+    canDelete?:boolean;
+    shapeType ?: string;
+    drawingStep ?: number;
+}
+
 type CanvasText = {
     text: string;
     font?: string;
@@ -110,11 +117,13 @@ export interface ImageEditorProps {
     onSketchSaved?: (result: boolean, path: string) => void;
     onPathsChange?: (pathsCount: number) => void;
     onShapeSelectionChanged?: (isShapeSelected: boolean) => void;
+    onDrawingStateChanged?: (event: DrawingStateEvent) => void;
 }
 
 export class ImageEditor extends React.Component<ImageEditorProps & ViewProperties> {
     clear(): void;
     undo(): number;
+    undoShape(): number;
     addPath(data: Path): void;
     deletePath(id: number): void;
     addShape(config: AddShapeConfig): void;
@@ -171,6 +180,7 @@ export interface RNImageEditorProps {
     onStrokeEnd?: (path: Path) => void;
     onClosePressed?: () => void;
     onUndoPressed?: (id: number) => void;
+    onDrawingStateChanged?: (event: DrawingStateEvent) => void;
     onClearPressed?: () => void;
     onPathsChange?: (pathsCount: number) => void;
     user?: string;

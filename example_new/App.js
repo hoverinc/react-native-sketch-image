@@ -8,7 +8,17 @@
 
 import type { Node } from "react";
 import React, { useRef, useState } from "react";
-import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
+import {
+  Alert,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
 
 import { Colors } from "react-native/Libraries/NewAppScreen";
 
@@ -54,7 +64,7 @@ const App: () => Node = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {
         state.example === 0 &&
         <View style={{ justifyContent: "center", alignItems: "center", width: 340 }}>
@@ -556,7 +566,7 @@ const App: () => Node = () => {
           </ScrollView>
         </View>
       }
-    </View>
+    </SafeAreaView>
   );
 };
 

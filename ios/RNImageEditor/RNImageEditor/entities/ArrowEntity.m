@@ -79,4 +79,7 @@
     CGContextStrokePath(contextRef);
 }
 
+- (NSString *)getShapeType {
+    return @"Arrow";
+}
 @end

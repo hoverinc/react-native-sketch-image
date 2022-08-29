@@ -14,6 +14,8 @@
 - (void)drawContent:(CGRect)rect withinContext: (CGContextRef)contextRef;
 @end
 
+static const int DEFAULT_DRAWING_STEP = -1 ;
+
 @interface MotionEntity : UIView <MotionEntityProtocol>
 
 @property (nonatomic) BOOL isSelected;
@@ -30,6 +32,7 @@
 @property (nonatomic) UIColor* borderStrokeColor;
 @property (nonatomic) CGFloat entityStrokeWidth;
 @property (nonatomic) UIColor* entityStrokeColor;
+@property (nonatomic) NSString* entityId;
 
 
 - (instancetype)initAndSetupWithParent: (NSInteger)parentWidth
@@ -57,5 +60,9 @@
            borderStrokeColor: (UIColor *)borderStrokeColor
            entityStrokeWidth: (CGFloat)entityStrokeWidth
            entityStrokeColor: (UIColor *)entityStrokeColor;
+- (BOOL)undo;
+- (int)getDrawingStep;
+- (NSString *)getShapeType;
+- (NSString *)getEntityId;
 
 @end

@@ -123,6 +123,13 @@ RCT_EXPORT_METHOD(clear:(nonnull NSNumber *)reactTag)
     }];
 }
 
+RCT_EXPORT_METHOD(undoShape:(nonnull NSNumber *)reactTag)
+{
+    [self runCanvas:reactTag block:^(RNImageEditor *canvas) {
+        [canvas undoShape];
+    }];
+}
+
 RCT_EXPORT_METHOD(transferToBase64:(nonnull NSNumber *)reactTag type: (NSString*) type withTransparentBackground:(BOOL) transparent includeImage:(BOOL)includeImage includeText:(BOOL)includeText cropToImageSize:(BOOL)cropToImageSize :(RCTResponseSenderBlock)callback)
 {
     [self runCanvas:reactTag block:^(RNImageEditor *canvas) {

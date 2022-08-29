@@ -16,9 +16,13 @@ import com.wwimmo.imageeditor.utils.Utility;
 import com.wwimmo.imageeditor.utils.entities.BorderStyle;
 import com.wwimmo.imageeditor.utils.layers.Layer;
 
+import java.util.UUID;
+
 @SuppressWarnings({"WeakerAccess"})
 public abstract class MotionEntity {
 
+
+    public static final int DEFAULT_DRAWING_STEP = -1;
     @NonNull
     protected final Layer layer;
 
@@ -71,9 +75,12 @@ public abstract class MotionEntity {
     @NonNull
     private BorderStyle borderStyle = BorderStyle.DASHED;
 
+    private String id;
+
     public MotionEntity(@NonNull Layer layer,
                         @IntRange(from = 1) int canvasWidth,
                         @IntRange(from = 1) int canvasHeight) {
+        id = UUID.randomUUID().toString();
         this.layer = layer;
         this.canvasWidth = canvasWidth;
         this.canvasHeight = canvasHeight;
@@ -268,6 +275,14 @@ public abstract class MotionEntity {
         // free resources here
     }
 
+    /**
+     * Execute undo operation on the entity if possible. By default return false.
+     * @return true in case of event handled; false - otherwise, entity could be removed;
+     */
+    public boolean undo() {
+        return  false;
+    }
+
     @Override
     protected void finalize() throws Throwable {
         try {
@@ -276,6 +291,22 @@ public abstract class MotionEntity {
             //noinspection ThrowFromFinallyBlock
             super.finalize();
         }
+    }
+
+    /**
+     * Return the current number of drawing step. Used for composite shapes.
+     * @return
+     */
+    public int getDrawingStep() {
+        return DEFAULT_DRAWING_STEP;
+    }
+
+
+    public abstract String getShapeType();
+
+
+    public String getId(){
+        return id;
     }
 
 }

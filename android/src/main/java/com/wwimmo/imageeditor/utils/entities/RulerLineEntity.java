@@ -171,4 +171,9 @@ public class RulerLineEntity extends MotionEntity {
             this.mArrowBitmap.recycle();
         }
     }
+
+    @Override
+    public String getShapeType() {
+        return EntityType.RULER.label;
+    }
 }

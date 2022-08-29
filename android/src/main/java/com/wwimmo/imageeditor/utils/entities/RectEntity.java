@@ -145,4 +145,9 @@ public class RectEntity extends MotionEntity {
             this.mRectBitmap.recycle();
         }
     }
+
+    @Override
+    public String getShapeType() {
+        return EntityType.RECT.label;
+    }
 }

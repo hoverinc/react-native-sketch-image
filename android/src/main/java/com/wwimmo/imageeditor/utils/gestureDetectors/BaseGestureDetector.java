@@ -146,4 +146,8 @@ public abstract class BaseGestureDetector {
         return mCurrEvent.getEventTime();
     }
 
+    public MotionEvent getPrevEvent() {
+        return mPrevEvent;
+    }
+
 }

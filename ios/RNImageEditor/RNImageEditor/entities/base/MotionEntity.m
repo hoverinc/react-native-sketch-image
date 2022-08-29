@@ -45,6 +45,7 @@
         self.entityStrokeColor = entityStrokeColor;
         
         self.backgroundColor = [UIColor clearColor];
+        self.entityId = [[NSUUID UUID] UUIDString];
     }
     return self;
 }
@@ -124,6 +125,27 @@
 
 - (void)drawContent:(CGRect)rect withinContext:(CGContextRef)contextRef {
     NSAssert(NO, @"This is an abstract method and should be overridden");
+}
+
+
+/**
+ * Execute undo operation on the entity if possible. By default return false.
+ * @return true in case of event handled; false - otherwise, entity could be removed;
+ */
+- (BOOL)undo{
+    return false;
+}
+
+- (int)getDrawingStep {
+    return DEFAULT_DRAWING_STEP;
+}
+
+- (NSString *)getShapeType {
+    return nil;
+}
+
+- (NSString *)getEntityId {
+    return self.entityId;
 }
 
 @end

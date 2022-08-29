@@ -159,4 +159,9 @@ public class TriangleEntity extends MotionEntity {
             this.mTriangleBitmap.recycle();
         }
     }
+
+    @Override
+    public String getShapeType() {
+        return EntityType.TRIANGLE.label;
+    }
 }

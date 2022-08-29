@@ -1,6 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
-import ReactNative, { View, Text, TouchableOpacity, FlatList, ViewPropTypes } from "react-native";
+import ReactNative, { View, Text, TouchableOpacity, FlatList } from "react-native";
+import { ViewPropTypes } from "deprecated-react-native-prop-types";
 import ImageEditor from "./src/ImageEditor";
 import { requestPermissions } from "./src/handlePermissions";
 
@@ -38,6 +39,7 @@ export default class RNImageEditor extends React.Component {
         savePreference: PropTypes.func,
         onSketchSaved: PropTypes.func,
         onShapeSelectionChanged: PropTypes.func,
+        onDrawingStateChanged: PropTypes.func,
         shapeConfiguration: PropTypes.shape({
             shapeBorderColor: PropTypes.string,
             shapeBorderStyle: PropTypes.string,
@@ -123,6 +125,7 @@ export default class RNImageEditor extends React.Component {
         savePreference: null,
         onSketchSaved: () => {},
         onShapeSelectionChanged: () => {},
+        onDrawingStateChanged: () => {},
         shapeConfiguration: {
             shapeBorderColor: "transparent",
             shapeBorderStyle: "Dashed",
@@ -158,6 +161,10 @@ export default class RNImageEditor extends React.Component {
 
     undo() {
         return this._sketchCanvas.undo();
+    }
+
+    undoShape() {
+        return this._sketchCanvas.undoShape();
     }
 
     addPath(data) {
@@ -368,6 +375,7 @@ export default class RNImageEditor extends React.Component {
                     strokeWidth={this.state.strokeWidth}
                     onSketchSaved={(success, path) => this.props.onSketchSaved(success, path)}
                     onShapeSelectionChanged={(isShapeSelected) => this.props.onShapeSelectionChanged(isShapeSelected)}
+                    onDrawingStateChanged={(e) => this.props.onDrawingStateChanged(e)}
                     touchEnabled={this.props.touchEnabled}
                     onPathsChange={this.props.onPathsChange}
                     text={this.props.text}

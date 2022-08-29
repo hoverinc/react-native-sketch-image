@@ -1,5 +1,5 @@
 import React from "react";
-import { Alert, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Platform, Text, TouchableOpacity, View } from "react-native";
 import { ImageEditor } from "@hoverinc/react-native-sketch-canvas";
 
 
@@ -17,6 +17,11 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
             canvas.current.addShape({ shapeType: "MeasurementTool" });
           }}>
             <Text style={{ color: "white" }}>Tool</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.functionButton} onPress={() => {
+            canvas.current.addShape({ shapeType: "Text", textShapeText : 'WWW WW', textShapeFontSize: Platform.OS === 'ios' ? 20 : 14});
+          }}>
+            <Text style={{ color: "white" }}>Text</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.functionButton} onPress={() => {
             setState({ thickness: 10 });
@@ -38,11 +43,11 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
         strokeColor={state.color}
         strokeWidth={state.thickness}
         onStrokeStart={(x, y) => {
-          console.log("x: ", x, ", y: ", y);
+          console.log("onStrokeStart", "x: ", x, ", y: ", y);
           setState({ message: "Start" });
         }}
         onStrokeChanged={(x, y) => {
-          console.log("x: ", x, ", y: ", y);
+          console.log("onStrokeChanged", "x: ", x, ", y: ", y);
           setState({ message: "Changed" });
         }}
         onStrokeEnd={() => {
@@ -50,6 +55,13 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
         }}
         onPathsChange={(pathsCount) => {
           console.log("pathsCount", pathsCount);
+        }}
+        touchEnabled={true}
+        onShapeSelectionChanged={v => {
+          console.log('onShapeSelectionChanged', v)
+        }}
+        onDrawingStateChanged={e => {
+          console.log('onDrawingStateChanged', JSON.stringify(e));
         }}
       />
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -63,6 +75,12 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
             setState({ color: "#000000" });
           }}>
             <Text style={{ color: "white" }}>Black</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.functionButton, { backgroundColor: "blue" }]} onPress={() => {
+            canvas.current.undoShape();
+          }}>
+            <Text style={{ color: "white" }}>Undo</Text>
           </TouchableOpacity>
         </View>
         <Text style={{ marginRight: 8, fontSize: 20 }}>{state.message}</Text>

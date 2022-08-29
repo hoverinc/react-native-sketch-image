@@ -14,9 +14,11 @@
 #import "entities/ArrowEntity.h"
 #import "entities/TextEntity.h"
 #import "entities/RulerEntity.h"
+#import "entities/MeasurementEntity.h"
 
 @implementation RNImageEditor
 {
+    NSMutableArray *_allShapes;
     RCTEventDispatcher *_eventDispatcher;
     NSMutableArray *_paths;
     RNImageEditorData *_currentPath;
@@ -40,6 +42,7 @@
     if (self) {
         _eventDispatcher = eventDispatcher;
         _paths = [NSMutableArray new];
+        _allShapes = [NSMutableArray new];
         _needsFullRedraw = YES;
 
         self.backgroundColor = [UIColor clearColor];
@@ -327,6 +330,7 @@
     int index = -1;
     for(int i=0; i<_paths.count; i++) {
         if (((RNImageEditorData*)_paths[i]).pathId == pathId) {
+            [_allShapes removeObject:@(((RNImageEditorData*)_paths[i]).pathId).stringValue];
             index = i;
             break;
         }
@@ -337,6 +341,7 @@
         _needsFullRedraw = YES;
         [self setNeedsDisplay];
         [self notifyPathsUpdate];
+        [self onDrawingStateChanged];
     }
 }
 
@@ -354,6 +359,9 @@
 
         [self setFrozenImageNeedsUpdate];
         [self setNeedsDisplayInRect:updateRect];
+        if ([_currentPath.points count] > 0){
+            [self onDrawingStateChangedWithStroke:true];
+        }
     }
 }
 
@@ -361,16 +369,24 @@
     if (_currentPath.isTranslucent) {
         [_currentPath drawInContext:_drawingContext];
     }
+    if ([_currentPath.points count] > 0) {
+        [_allShapes addObject:@(_currentPath.pathId).stringValue];
+        [self onDrawingStateChangedWithStroke:false];
+    }
     _currentPath = nil;
     [self notifyPathsUpdate];
+
 }
 
 - (void) clear {
     [_paths removeAllObjects];
+    [self.motionEntities removeAllObjects];
+    [_allShapes removeAllObjects];
     _currentPath = nil;
     _needsFullRedraw = YES;
     [self setNeedsDisplay];
     [self notifyPathsUpdate];
+    [self onDrawingStateChanged];
 }
 
 - (UIImage*)createImageWithTransparentBackground: (BOOL) transparent includeImage:(BOOL)includeImage includeText:(BOOL)includeText cropToImageSize:(BOOL)cropToImageSize {
@@ -597,8 +613,20 @@
 }
 
 - (void)addEntity:(NSString *)entityType textShapeFontType:(NSString *)textShapeFontType textShapeFontSize:(NSNumber *)textShapeFontSize textShapeText:(NSString *)textShapeText imageShapeAsset:(NSString *)imageShapeAsset {
+    bool hasMeasurement  = _measurementEntity != nil;
+    bool hasTextType = [@"Text" isEqual:entityType];
+    bool hasTextStep =_measurementEntity.isTextStep;
+    BOOL shouldContinue = hasMeasurement && hasTextType && hasTextStep;
 
-    switch ([@[@"Circle", @"Rect", @"Square", @"Triangle", @"Arrow", @"Text", @"Image", @"Ruler"] indexOfObject: entityType]) {
+    if (_measurementEntity != nil && !shouldContinue) {
+        [[self motionEntities] removeObject:_measurementEntity];
+        [_allShapes removeObject:_measurementEntity.entityId];
+        [_measurementEntity removeFromSuperview];
+        _measurementEntity = nil;
+        self.selectedEntity = nil;
+        [self setNeedsDisplay];
+    }
+    switch ([@[@"Circle", @"Rect", @"Square", @"Triangle", @"Arrow", @"Text", @"Image", @"Ruler", @"MeasurementTool"] indexOfObject: entityType]) {
         case 1:
             [self addRectEntity:300 andHeight:150];
             break;
@@ -612,13 +640,25 @@
             [self addArrowEntity];
             break;
         case 5:
-            [self addTextEntity:textShapeFontType withFontSize:textShapeFontSize withText:textShapeText];
+            if (shouldContinue) {
+                [_measurementEntity addText:textShapeText withTextSize:textShapeFontSize withFontType:textShapeFontType];
+                [self onDrawingStateChanged];
+                [self setNeedsDisplay];
+                _measurementEntity = nil;
+                [self unselectShape];
+                [self onDrawingStateChanged];
+            } else {
+                [self addTextEntity:textShapeFontType withFontSize:textShapeFontSize withText:textShapeText];
+            }
             break;
         case 6:
             // TODO: ImageEntity Doesn't exist yet
             break;
         case 7:
             [self addRulerEntity];
+            break;
+        case 8:
+            [self addMeasurementEntity];
             break;
         case 0:
         case NSNotFound:
@@ -648,9 +688,7 @@
                             entityStrokeWidth:self.entityStrokeWidth
                             entityStrokeColor:self.entityStrokeColor];
 
-    [self.motionEntities addObject:entity];
-    [self onShapeSelectionChanged:entity];
-    [self selectEntity:entity];
+    [self onAddShape:entity];
 }
 
 - (void)addRectEntity:(NSInteger)width andHeight: (NSInteger)height {
@@ -672,9 +710,7 @@
                           entityStrokeWidth:self.entityStrokeWidth
                           entityStrokeColor:self.entityStrokeColor];
 
-    [self.motionEntities addObject:entity];
-    [self onShapeSelectionChanged:entity];
-    [self selectEntity:entity];
+    [self onAddShape:entity];
 }
 
 - (void)addTriangleEntity {
@@ -696,9 +732,7 @@
                               entityStrokeWidth:self.entityStrokeWidth
                               entityStrokeColor:self.entityStrokeColor];
 
-    [self.motionEntities addObject:entity];
-    [self onShapeSelectionChanged:entity];
-    [self selectEntity:entity];
+    [self onAddShape:entity];
 }
 
 - (void)addArrowEntity {
@@ -720,9 +754,7 @@
                               entityStrokeWidth:self.entityStrokeWidth
                               entityStrokeColor:self.entityStrokeColor];
 
-    [self.motionEntities addObject:entity];
-    [self onShapeSelectionChanged:entity];
-    [self selectEntity:entity];
+    [self onAddShape:entity];
 }
 
 - (void)addRulerEntity {
@@ -744,10 +776,30 @@
                               entityStrokeWidth:self.entityStrokeWidth
                               entityStrokeColor:self.entityStrokeColor];
 
-    [self.motionEntities addObject:entity];
-    [self onShapeSelectionChanged:entity];
-    [self selectEntity:entity];
+    [self onAddShape:entity];
 }
+
+- (void)addMeasurementEntity {
+    CGFloat centerX = CGRectGetMidX(self.bounds);
+    CGFloat centerY = CGRectGetMidY(self.bounds);
+
+    MeasurementEntity *entity = [[MeasurementEntity alloc]
+                              initAndSetupWithParent:self.bounds.size.width
+                              parentHeight:self.bounds.size.height
+                              parentCenterX:centerX
+                              parentCenterY:centerY
+                              parentScreenScale:self.window.screen.scale
+                              bordersPadding:5.0f
+                              borderStyle:self.entityBorderStyle
+                              borderStrokeWidth:self.entityBorderStrokeWidth
+                              borderStrokeColor:self.entityBorderColor
+                              entityStrokeWidth:self.entityStrokeWidth
+                              entityStrokeColor:self.entityStrokeColor];
+
+    _measurementEntity = entity;
+    [self onAddShape:entity];
+}
+
 
 - (void)addTextEntity:(NSString *)fontType withFontSize: (NSNumber *)fontSize withText: (NSString *)text {
     CGFloat centerX = CGRectGetMidX(self.bounds);
@@ -769,9 +821,15 @@
                            entityStrokeWidth:self.entityStrokeWidth
                            entityStrokeColor:self.entityStrokeColor];
 
+    [self onAddShape:entity];
+}
+
+- (void)onAddShape:(MotionEntity *)entity {
     [self.motionEntities addObject:entity];
+    [_allShapes addObject:entity.getEntityId];
     [self onShapeSelectionChanged:entity];
     [self selectEntity:entity];
+    [self onDrawingStateChanged];
 }
 
 - (void)selectEntity:(MotionEntity *)entity {
@@ -792,8 +850,13 @@
 
 - (void)updateSelectionOnTapWithLocationPoint:(CGPoint)tapLocation {
     MotionEntity *nextEntity = [self findEntityAtPointX:tapLocation.x andY:tapLocation.y];
+    // Protect from calling wrong events during drawing stroke
+    bool shouldCallStateChanged = self.selectedEntity != nextEntity;
     [self onShapeSelectionChanged:nextEntity];
     [self selectEntity:nextEntity];
+    if (shouldCallStateChanged) {
+        [self onDrawingStateChanged];
+    }
 }
 
 - (MotionEntity *)findEntityAtPointX:(CGFloat)x andY: (CGFloat)y {
@@ -816,8 +879,18 @@
             break;
         }
     }
+    [self deleteShape:entityToRemove];
+    [self onDrawingStateChanged];
+}
+
+- (void)unselectShape {
+    [self selectEntity:nil];
+}
+
+-(void)deleteShape: (MotionEntity *)entityToRemove {
     if (entityToRemove) {
         [self.motionEntities removeObject:entityToRemove];
+        [_allShapes removeObject:entityToRemove.getEntityId];
         [entityToRemove removeFromSuperview];
         entityToRemove = nil;
         [self selectEntity:entityToRemove];
@@ -825,9 +898,39 @@
     }
 }
 
-- (void)unselectShape {
-    [self selectEntity:nil];
+- (void) undoShape {
+    MotionEntity* lastEntity = nil;
+    NSString* lastId = nil;
+    if (self.selectedEntity == nil) {
+        lastId = [_allShapes lastObject];
+        if (lastId != nil) {
+            NSCharacterSet* notDigits = [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
+            if ([lastId rangeOfCharacterFromSet:notDigits].location != NSNotFound) {
+                lastEntity = [self.motionEntities lastObject];
+            }
+        }
+    } else {
+        lastEntity = self.selectedEntity;
+    }
+    if (lastEntity != nil) {
+        bool result = [lastEntity undo];
+        if (!result) {
+            _measurementEntity = nil;
+            [self deleteShape:lastEntity];
+            [self onDrawingStateChanged];
+        }else {
+            [self selectEntity:lastEntity];
+            // Select measurement tool to have possibility to continue drawing
+            if ([lastEntity class] == [MeasurementEntity class]){
+                _measurementEntity = lastEntity;
+            }
+            [self onDrawingStateChangedWithUndo:true];
+        }
+    } else if (lastId != nil) {
+        [self deletePath:[lastId intValue]];
+    }
 }
+
 
 - (void)increaseTextEntityFontSize {
     TextEntity *textEntity = [self getSelectedTextEntity];
@@ -865,14 +968,28 @@
 - (void)handleTap:(UITapGestureRecognizer *)sender {
     if (sender.state == UIGestureRecognizerStateEnded) {
         CGPoint tapLocation = [sender locationInView:sender.view];
-        [self updateSelectionOnTapWithLocationPoint:tapLocation];
+        if (_measurementEntity != nil) {
+            bool inProgress = [_measurementEntity addPoint:tapLocation];
+            [_measurementEntity setNeedsDisplay];
+            if (!inProgress) {
+                // call before clear to notify RN about finished shape
+                [self onDrawingStateChanged];
+                _measurementEntity = nil;
+                [self unselectShape];
+                [self onShapeSelectionChanged:nil];
+                [self onDrawingStateChanged];
+            }
+            [self onDrawingStateChanged];
+        } else {
+            [self updateSelectionOnTapWithLocationPoint:tapLocation];
+        }
     }
 }
 
 - (void)handleRotate:(UIRotationGestureRecognizer *)sender {
     UIGestureRecognizerState state = [sender state];
     if (state == UIGestureRecognizerStateBegan || state == UIGestureRecognizerStateChanged) {
-        if (self.selectedEntity) {
+        if (self.selectedEntity && _measurementEntity == nil) {
             [self.selectedEntity rotateEntityBy:sender.rotation];
             [self setNeedsDisplayInRect:self.selectedEntity.bounds];
         }
@@ -880,9 +997,18 @@
     }
 }
 
+-(BOOL)shouldStartMove {
+    return self.selectedEntity == nil || ([self.selectedEntity class] == [MeasurementEntity class] && self.selectedEntity.getDrawingStep == -1);
+}
+
 - (void)handleMove:(UIPanGestureRecognizer *)sender {
     UIGestureRecognizerState state = [sender state];
-    if (self.selectedEntity) {
+    if (state == UIGestureRecognizerStateBegan && [self shouldStartMove]) {
+        // select shape
+        CGPoint tapLocation = [sender locationInView:sender.view];
+        [self updateSelectionOnTapWithLocationPoint:tapLocation];
+    }
+    if (self.selectedEntity && _measurementEntity == nil) {
         if (state != UIGestureRecognizerStateCancelled) {
             [self.selectedEntity moveEntityTo:[sender translationInView:self.selectedEntity]];
             [sender setTranslation:CGPointZero inView:sender.view];
@@ -894,7 +1020,7 @@
 - (void)handleScale:(UIPinchGestureRecognizer *)sender {
     UIGestureRecognizerState state = [sender state];
     if (state == UIGestureRecognizerStateBegan || state == UIGestureRecognizerStateChanged) {
-        if (self.selectedEntity) {
+        if (self.selectedEntity && _measurementEntity == nil) {
             [self.selectedEntity scaleEntityBy:sender.scale];
             [self setNeedsDisplayInRect:self.selectedEntity.bounds];
         }
@@ -927,6 +1053,44 @@
             // Add delay!
             _onChange(@{ @"isShapeSelected": @NO });
         }
+    }
+}
+
+-(void)onDrawingStateChanged {
+    [self onDrawingStateChangedWithUndo:false];
+}
+
+- (BOOL)canUndo {
+    return [_allShapes count] > 0 ? true : false;
+}
+
+-(void)onDrawingStateChangedWithUndo:(BOOL)withUndo {
+    if (_onChange) {
+        if (self.selectedEntity == nil){
+            _onChange(@{
+                @"canUndo": @([self canUndo]),
+                @"canDelete":@NO,
+                @"drawingStep": @-1,
+            });
+        } else {
+            _onChange(@{
+                @"canUndo": @([self canUndo]),
+                @"canDelete": [self.selectedEntity getDrawingStep] == -1 && !withUndo ? @YES : @NO,
+                @"drawingStep": @([self.selectedEntity getDrawingStep]),
+                @"shapeType": [self.selectedEntity getShapeType],
+            });
+        }
+    }
+}
+
+- (void)onDrawingStateChangedWithStroke:(BOOL)withPointerDown {
+    if (_onChange && self.selectedEntity == nil) {
+        _onChange(@{
+            @"canUndo": @([self canUndo]),
+            @"canDelete": @NO,
+            @"drawingStep": @(withPointerDown ? 0 : 1),
+            @"shapeType": @"stroke",
+        });
     }
 }
 
