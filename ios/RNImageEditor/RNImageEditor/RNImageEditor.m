@@ -532,7 +532,9 @@
 
 - (void)saveImageWithMetadata:(NSData *)imageData fileURL:(NSURL*)fileURL
 {
-    NSString *originalFileName = [_currentFilePath lastPathComponent];
+    NSString *originalFileName = [[_currentFilePath lastPathComponent] stringByDeletingPathExtension];
+    NSString *uniqueImageId = [self getUniqueImageId:originalFileName];
+
     CGImageSourceRef source = CGImageSourceCreateWithData((CFDataRef)imageData, NULL);
 
     NSDictionary *metadataDict = (NSDictionary *) CFBridgingRelease(CGImageSourceCopyPropertiesAtIndex(source, 0, NULL));
@@ -541,7 +543,7 @@
     NSMutableDictionary *mutableMetadataDict = [metadataDict mutableCopy];
     NSMutableDictionary *mutableExifDict = [exifDict mutableCopy];
 
-    [mutableExifDict setValue:originalFileName forKey:(NSString *)kCGImagePropertyExifImageUniqueID];
+    [mutableExifDict setValue:uniqueImageId forKey:(NSString *)kCGImagePropertyExifImageUniqueID];
     [mutableMetadataDict setObject:mutableExifDict forKey:(NSString *)kCGImagePropertyExifDictionary];
 
     NSMutableData *destData = [NSMutableData data];
@@ -556,6 +558,37 @@
     CFRelease(source);
 
     _currentFilePath = nil;
+}
+
+- (NSString *)getUniqueImageId:(NSString *)fileName
+{
+    NSString *reversedFileName = [self reverseString:fileName];
+    NSRange firstChar = [reversedFileName rangeOfString:@"."];
+    if (firstChar.length == 0) {
+        firstChar = [reversedFileName rangeOfString:@"_"];
+        if (firstChar.length == 0) {
+            return fileName;
+        }
+    }
+
+    NSUInteger firstCharIndex = firstChar.location;
+    NSString *reversedUniqueImageId =
+        [reversedFileName substringWithRange:NSMakeRange(0, firstCharIndex)];
+    NSString *uniqueImageId = [self reverseString:reversedUniqueImageId];
+    return uniqueImageId;
+}
+
+- (NSString *)reverseString:(NSString *)originalStr
+{
+    NSMutableString *reversedString = [NSMutableString string];
+    NSInteger charIndex = [originalStr length];
+    while (charIndex > 0) {
+        charIndex--;
+        NSRange subStrRange = NSMakeRange(charIndex, 1);
+        [reversedString appendString:[originalStr substringWithRange:subStrRange]];
+    }
+
+    return reversedString;
 }
 
 - (UIImage *)scaleImage:(UIImage *)originalImage toSize:(CGSize)size contentMode: (NSString*)mode
