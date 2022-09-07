@@ -20,6 +20,7 @@ import androidx.annotation.Nullable;
 
 import com.wwimmo.imageeditor.utils.layers.Layer;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,6 +49,13 @@ public class MeasureToolEntity extends MotionEntity {
     private static final int OUTER_RADIUS_CONNECTION = OUTER_RADIUS - 1;
     private static final int STROKE_WIDTH = 4;
 
+    private static final int LENS_WIDTH = 260;
+    private static final int LENS_HEIGHT = 160;
+    private WeakReference<Bitmap> backgroundRef;
+    float zoomStrokeWidth = 2;
+    private Bitmap mZoomBitmap;
+    private Canvas mZoomCanvas;
+
     public MeasureToolEntity(@NonNull Layer layer,
                              @IntRange(from = 1) int canvasWidth,
                              @IntRange(from = 1) int canvasHeight) {
@@ -63,7 +71,7 @@ public class MeasureToolEntity extends MotionEntity {
     }
 
     private void updateEntity(boolean moveToPreviousCenter) {
-        configureArrowBitmap(null);
+        configureBitmap(null);
 
         float width = this.mBitmap.getWidth();
         float height = this.mBitmap.getHeight();
@@ -96,7 +104,7 @@ public class MeasureToolEntity extends MotionEntity {
 //        super.updateMatrix();
     }
 
-    private void configureArrowBitmap(@Nullable Paint paint) {
+    private void configureBitmap(@Nullable Paint paint) {
         updatePaint(paint);
         if (this.mBitmap == null) {
             this.mBitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
@@ -131,10 +139,73 @@ public class MeasureToolEntity extends MotionEntity {
                     );
                 }
             }
+            if (selectedPoint != null && backgroundRef.get() != null) {
+                this.drawZoomLens(selectedPoint, backgroundRef.get());
+            }
+            mPaint.setStrokeWidth(savedStrokeWidth);
         }
+
 
         this.mCanvas.restore();
     }
+
+    private void drawZoomLens(PointF centerPoint, Bitmap background) {
+        // Draw rect near the point
+        float x = centerPoint.x - POINT_TOUCH_AREA / 2f;
+        float y = centerPoint.y - POINT_TOUCH_AREA / 2f;
+        RectF drawingRect = new RectF(
+                x - LENS_WIDTH,
+                y - LENS_HEIGHT,
+                x,
+                y
+        );
+
+        // Add zooming area
+        if (mZoomBitmap == null) {
+            mZoomBitmap = Bitmap.createBitmap(LENS_WIDTH, LENS_HEIGHT, Bitmap.Config.ARGB_8888);
+            mZoomCanvas = new Canvas(this.mZoomBitmap);
+        }
+
+        int zoom = 2;
+        int zoomedWidth = LENS_WIDTH / zoom;
+        int zoomedHeight = LENS_HEIGHT / zoom;
+        float scaleX = (float) background.getWidth() / this.mCanvas.getWidth();
+        float scaleY = (float) background.getHeight() / this.mCanvas.getHeight();
+        Rect srcRect = new Rect( (int) ((centerPoint.x - zoomedWidth)* scaleX), (int) ((centerPoint.y - zoomedHeight) * scaleY), (int) ((centerPoint.x + zoomedWidth) * scaleX), (int) ((centerPoint.y + zoomedHeight)*scaleY));
+
+        Rect targetRect = new Rect(0, 0, LENS_WIDTH, LENS_HEIGHT);
+        mZoomCanvas.save();
+        mZoomCanvas.drawBitmap(background, srcRect, targetRect, null);
+        mZoomCanvas.restore();
+        // Post effect
+        mCanvas.save();
+        mCanvas.drawBitmap(mZoomBitmap, null, drawingRect, null);
+        mCanvas.restore();
+
+        this.mPaint.setStyle(Paint.Style.STROKE);
+        this.mCanvas.drawRect(drawingRect, this.mPaint);
+
+        // Add center indicator
+        float centerX = drawingRect.centerX();
+        float centerY = drawingRect.centerY();
+
+        this.mPaint.setStyle(Paint.Style.FILL);
+        this.mCanvas.drawCircle(centerX, centerY, zoomStrokeWidth, this.mPaint);
+        this.mPaint.setStyle(Paint.Style.STROKE);
+        this.mPaint.setStrokeWidth(zoomStrokeWidth);
+        this.mCanvas.drawCircle(centerX, centerY, OUTER_RADIUS, this.mPaint);
+
+        int lineSize = OUTER_RADIUS / 3;
+        // top to center
+        this.mCanvas.drawLine(centerX, centerY - OUTER_RADIUS, centerX, centerY - lineSize, this.mPaint);
+        // center to bottom
+        this.mCanvas.drawLine(centerX, centerY + lineSize, centerX, centerY + OUTER_RADIUS, this.mPaint);
+        // left to center
+        this.mCanvas.drawLine(centerX - OUTER_RADIUS, centerY, centerX - lineSize, centerY, this.mPaint);
+        // right to center
+        this.mCanvas.drawLine(centerX + lineSize, centerY, centerX + OUTER_RADIUS, centerY, this.mPaint);
+    }
+
 
     private double distance(float x1, float y1, float x2, float y2) {
         return Math.hypot(x2 - x1, y2 - y1);
@@ -172,7 +243,7 @@ public class MeasureToolEntity extends MotionEntity {
 
         Rect textRect = new Rect();
         textPaint.getTextBounds(text, 0, text.length(), textRect);
-        int textWidth = (int) (textRect.width()  + Math.max(2 , mScaledDensity * 2));
+        int textWidth = (int) (textRect.width() + Math.max(2, mScaledDensity * 2));
         StaticLayout sl = new StaticLayout(
                 text,
                 textPaint,
@@ -184,8 +255,8 @@ public class MeasureToolEntity extends MotionEntity {
         );
 
         canvas.save();
-        float translateX = centerX - textWidth / 2;
-        float translateY = centerY - sl.getHeight() / 2;
+        float translateX = centerX - textWidth / 2f;
+        float translateY = centerY - sl.getHeight() / 2f;
         canvas.translate(translateX, translateY);
 
         // background first
@@ -224,7 +295,6 @@ public class MeasureToolEntity extends MotionEntity {
         // TODO: border gets pixelated because it's just done once (initially)!
         this.mPaint.setAntiAlias(true);
 
-        // When scaling the ArrowShape the border gets pixelated, this helps a bit against it.
         // TODO: FIX THIS by somehow scaling the shape as well and not just the bitmap...
         this.mPaint.setFilterBitmap(true);
         this.mPaint.setDither(true);
@@ -234,7 +304,7 @@ public class MeasureToolEntity extends MotionEntity {
 
     @Override
     protected void drawContent(@NonNull Canvas canvas, @Nullable Paint drawingPaint) {
-        configureArrowBitmap(drawingPaint);
+        configureBitmap(drawingPaint);
         canvas.drawBitmap(this.mBitmap, matrix, this.mPaint);
     }
 
@@ -372,5 +442,9 @@ public class MeasureToolEntity extends MotionEntity {
         mTextPaint.setTextSize(realFontSize);
         mTextPaint.setColor(Color.WHITE);
         mScaledDensity = displayMetrics.scaledDensity;
+    }
+
+    public void setBackground(Bitmap background) {
+        backgroundRef = new WeakReference<>(background);
     }
 }
