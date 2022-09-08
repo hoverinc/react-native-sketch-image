@@ -482,7 +482,6 @@ public class ImageEditor extends View {
         rootFolder = new File(mContext.getFilesDir().getAbsolutePath() + File.separator + folder);
 
         success = rootFolder.exists() || rootFolder.mkdirs();
-        unselectShape();
         if (success) {
             Bitmap bitmap = createImage(format.equals("png") && transparent, includeImage, includeText, cropToImageSize);
 

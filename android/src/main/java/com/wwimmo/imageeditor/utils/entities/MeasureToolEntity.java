@@ -151,14 +151,22 @@ public class MeasureToolEntity extends MotionEntity {
 
     private void drawZoomLens(PointF centerPoint, Bitmap background) {
         // Draw rect near the point
-        float x = centerPoint.x - POINT_TOUCH_AREA / 2f;
-        float y = centerPoint.y - POINT_TOUCH_AREA / 2f;
+        float x0 = centerPoint.x - POINT_TOUCH_AREA / 2f;
+        float y0 = centerPoint.y - POINT_TOUCH_AREA / 2f;
+        if (x0 < LENS_WIDTH) {
+            x0 = centerPoint.x + POINT_TOUCH_AREA / 2f + LENS_WIDTH;
+        }
+        if (y0 < LENS_HEIGHT) {
+            y0 = centerPoint.y +  POINT_TOUCH_AREA / 2f  + LENS_HEIGHT;
+        }
+
         RectF drawingRect = new RectF(
-                x - LENS_WIDTH,
-                y - LENS_HEIGHT,
-                x,
-                y
+                x0 - LENS_WIDTH,
+                y0 - LENS_HEIGHT,
+                x0,
+                y0
         );
+
 
         // Add zooming area
         if (mZoomBitmap == null) {
