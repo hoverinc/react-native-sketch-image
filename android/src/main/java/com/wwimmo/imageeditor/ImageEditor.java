@@ -985,7 +985,7 @@ public class ImageEditor extends View {
     }
 
     private void selectEntity(MotionEntity entity) {
-        if (mSelectedEntity != null) {
+        if (mSelectedEntity != null && mSelectedEntity != entity) {
             mSelectedEntity.setIsSelected(false);
         }
         if (entity != null) {
