@@ -25,8 +25,8 @@ int LENS_WIDTH = 100;
 int LENS_HEIGHT = 60;
 
 int aimSize = 24;
-int halfAimSize = aimSize /2;
-int aimEdge = aimSize / 3;
+int halfAimSize;
+int aimEdge;
 
 - (instancetype)initAndSetupWithParent: (NSInteger)parentWidth
                           parentHeight: (NSInteger)parentHeight
@@ -60,6 +60,8 @@ int aimEdge = aimSize / 3;
     if (self) {
         self.MIN_SCALE = 0.3f;
     }
+    halfAimSize = aimSize /2;
+    aimEdge = aimSize / 3;
 
     points = [NSMutableArray new];
     return self;
