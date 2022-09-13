@@ -11,6 +11,7 @@
 @implementation MeasurementEntity
 {
     NSMutableArray *points;
+    CGImageRef background;
 }
 
 int MAX_POINTS_COUNT = 2;
@@ -19,6 +20,13 @@ int TEXT_PADDING = 12;
 float pointSize = 22;
 float touchPointSize = 50;
 int selectedPosition;
+
+int LENS_WIDTH = 100;
+int LENS_HEIGHT = 60;
+
+int aimSize = 24;
+int halfAimSize = aimSize /2;
+int aimEdge = aimSize / 3;
 
 - (instancetype)initAndSetupWithParent: (NSInteger)parentWidth
                           parentHeight: (NSInteger)parentHeight
@@ -76,7 +84,7 @@ int selectedPosition;
                 NSValue *preVal = [points objectAtIndex:i - 1];
                 CGPoint prevPoint = [preVal CGPointValue];
                 [self drawConnection:contextRef withStartPoint:prevPoint withEndPoint:p];
-                
+
                 // draw text
                 if (i == 1 && [self text] != nil) {
                     CGPoint centerPoint = CGPointMake(
@@ -87,7 +95,64 @@ int selectedPosition;
             // draw actual point
             [self drawPoint:contextRef withPoint:p];
         }
+        if (selectedPosition != DEFAULT_SELECTED_POSITION && background != nil) {
+            NSValue *val = [points objectAtIndex:selectedPosition];
+            CGPoint p = [val CGPointValue];
+            [self drawZoomLens:p withinContext:contextRef withBackground:background];
+        }
     }
+}
+
+- (void)drawZoomLens:(CGPoint) center withinContext:(CGContextRef)contextRef  withBackground:(CGImageRef)background {
+
+    int x0 = center.x - touchPointSize / 2 - LENS_WIDTH;
+    int y0 = center.y  - touchPointSize / 2 - LENS_HEIGHT;
+    if (x0 < 0) {
+        x0 = center.x + touchPointSize / 2;
+    }
+    if (y0 < 0) {
+        y0 = center.y + touchPointSize /2;
+    }
+    // Calculate display rect
+    CGRect entityRect = CGRectMake(x0, y0, LENS_WIDTH, LENS_HEIGHT);
+    // Draw zoom lens
+
+    CGFloat scaleX = CGImageGetWidth(background) / self.bounds.size.width;
+    CGFloat scaleY = CGImageGetHeight(background) / self.bounds.size.height;
+    CGRect centerRect = CGRectMake((center.x - LENS_WIDTH/4) * scaleX, (center.y - LENS_HEIGHT/4 ) * scaleY, LENS_WIDTH / 2 * scaleX, LENS_HEIGHT / 2 * scaleY);
+
+    CGImageRef lensImage = CGImageCreateWithImageInRect(background, centerRect);
+    CGContextDrawImage(contextRef, entityRect, lensImage);
+
+    // Draw rect
+    CGContextSetLineWidth(contextRef, 2);
+    CGContextSetStrokeColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
+    CGContextStrokeRect(contextRef, entityRect);
+    // Draw center indicator
+
+    float centerX = CGRectGetMidX(entityRect);
+    float centerY = CGRectGetMidY(entityRect);
+    CGRect aimRect = CGRectMake(centerX - halfAimSize, centerY - halfAimSize, aimSize, aimSize);
+    CGContextStrokeEllipseInRect(contextRef, aimRect);
+    CGContextFillEllipseInRect(contextRef, CGRectMake(centerX - 1,centerY - 1,2,2));
+    CGContextBeginPath(contextRef);
+    // Top to center
+    CGContextMoveToPoint(contextRef, centerX, aimRect.origin.y);
+    CGContextAddLineToPoint(contextRef, centerX, aimRect.origin.y + aimEdge);
+    // Bottom to center
+    CGContextMoveToPoint(contextRef, centerX, aimRect.origin.y + aimSize);
+    CGContextAddLineToPoint(contextRef, centerX, aimRect.origin.y + aimSize - aimEdge);
+    // Left to center
+    CGContextMoveToPoint(contextRef, aimRect.origin.x, centerY);
+    CGContextAddLineToPoint(contextRef, aimRect.origin.x + aimEdge, centerY);
+    // Right to center
+    CGContextMoveToPoint(contextRef, aimRect.origin.x + aimSize, centerY);
+    CGContextAddLineToPoint(contextRef, aimRect.origin.x + aimSize - aimEdge, centerY);
+
+    CGContextStrokePath(contextRef);
+    // release background image
+    CGImageRelease(background);
+    CGImageRelease(lensImage);
 }
 
 - (CGRect)buildRect:(CGPoint) center withSize:(float)size {
@@ -95,7 +160,7 @@ int selectedPosition;
 }
 
 - (BOOL)addPoint:(CGPoint)point {
-    
+
     if ([points count] < MAX_POINTS_COUNT) {
         [points addObject: [NSValue valueWithCGPoint:point]];
         return [points count] < MAX_POINTS_COUNT || [self text] == nil;
@@ -150,7 +215,7 @@ int selectedPosition;
 
     float diffX = endPoint.x - startPoint.x;
     float diffY = endPoint.y - startPoint.y;
-    
+
     double theta;
     // get the correct angle depends on points positions
     if (diffX <= 0 && diffY <= 0) {
@@ -229,7 +294,7 @@ int selectedPosition;
 
 - (void)addText:(NSString *)text withTextSize:(NSNumber *)fontSize withFontType:(NSString *)fontType {
     self.text = text;
-    
+
     // Let's calculate the initial texts single line width here
     NSMutableParagraphStyle *style = [[NSParagraphStyle defaultParagraphStyle] mutableCopy];
     [style setAlignment:NSTextAlignmentCenter];
@@ -244,7 +309,7 @@ int selectedPosition;
                             NSParagraphStyleAttributeName: style
                             };
     CGRect initialTextRect = [text boundingRectWithSize:CGSizeMake([self parentWidth], CGFLOAT_MAX)
-                              
+
                                               options:NSStringDrawingUsesLineFragmentOrigin
                                            attributes:textAttributes
                                               context:nil];
@@ -267,7 +332,7 @@ int selectedPosition;
                                            attributes:self.textAttributes
                                               context:nil];
     self.textSize = textRect.size;
-    
+
 }
 
 - (BOOL)isTextStep{
@@ -276,14 +341,14 @@ int selectedPosition;
 
 
 - (void)drawText:(CGContextRef)contextRef withCenterPoint:(CGPoint)centerPoint {
-    
-     self.textAttributes = @{
+
+     self.textAttributes = @{
                             NSFontAttributeName: self.font,
                             NSForegroundColorAttributeName: [UIColor whiteColor],
                             NSParagraphStyleAttributeName: self.style
                             };
 
-    
+
     CGRect textRect = CGRectMake(
                                  centerPoint.x - self.textSize.width/2,
                                  centerPoint.y - self.textSize.height/2,
@@ -305,5 +370,16 @@ int selectedPosition;
     [self.text drawInRect:textRect withAttributes:self.textAttributes];
 }
 
+- (void)setBackground:(CGImageRef)imageSource {
+    background = imageSource;
+}
+
+- (void)setIsSelected:(BOOL)isSelected {
+    [super setIsSelected:isSelected];
+    if (!isSelected) {
+        selectedPosition = DEFAULT_SELECTED_POSITION;
+        background = nil;
+    }
+}
 
 @end
