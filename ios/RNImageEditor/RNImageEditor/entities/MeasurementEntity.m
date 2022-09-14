@@ -115,8 +115,10 @@ int aimEdge;
     if (y0 < 0) {
         y0 = center.y + touchPointSize /2;
     }
+
     // Calculate display rect
-    CGRect entityRect = CGRectMake(x0, y0, LENS_WIDTH, LENS_HEIGHT);
+    float centerX = x0 + LENS_WIDTH / 2;
+    float centerY = y0 + LENS_HEIGHT / 2;
     // Draw zoom lens
 
     CGFloat scaleX = CGImageGetWidth(background) / self.bounds.size.width;
@@ -124,19 +126,25 @@ int aimEdge;
     CGRect centerRect = CGRectMake((center.x - LENS_WIDTH/4) * scaleX, (center.y - LENS_HEIGHT/4 ) * scaleY, LENS_WIDTH / 2 * scaleX, LENS_HEIGHT / 2 * scaleY);
 
     CGImageRef lensImage = CGImageCreateWithImageInRect(background, centerRect);
-    CGContextDrawImage(contextRef, entityRect, lensImage);
 
+    CGContextTranslateCTM(contextRef, centerX, centerY);
+    CGContextScaleCTM(contextRef, 1, -1);
+    CGRect entityRect = CGRectMake(-LENS_WIDTH/2 , -LENS_HEIGHT/2, LENS_WIDTH , LENS_HEIGHT);
+    CGContextDrawImage(contextRef, entityRect, lensImage);
+    CGContextScaleCTM(contextRef, 1, -1);
+
+    centerX = 0;
+    centerY = 0;
     // Draw rect
     CGContextSetLineWidth(contextRef, 2);
     CGContextSetStrokeColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
     CGContextStrokeRect(contextRef, entityRect);
     // Draw center indicator
 
-    float centerX = CGRectGetMidX(entityRect);
-    float centerY = CGRectGetMidY(entityRect);
+
     CGRect aimRect = CGRectMake(centerX - halfAimSize, centerY - halfAimSize, aimSize, aimSize);
     CGContextStrokeEllipseInRect(contextRef, aimRect);
-    CGContextFillEllipseInRect(contextRef, CGRectMake(centerX - 1,centerY - 1,2,2));
+    CGContextFillEllipseInRect(contextRef, CGRectMake(centerX - 1,centerY - 1, 2, 2));
     CGContextBeginPath(contextRef);
     // Top to center
     CGContextMoveToPoint(contextRef, centerX, aimRect.origin.y);
