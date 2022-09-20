@@ -50,6 +50,7 @@ public class MeasureToolEntity extends MotionEntity {
 
     private static final int LENS_WIDTH = 260;
     private static final int LENS_HEIGHT = 160;
+    private static final int ZOOM = 2;
     private WeakReference<Bitmap> backgroundRef;
     float zoomStrokeWidth = 2;
     private Bitmap mZoomBitmap;
@@ -156,7 +157,7 @@ public class MeasureToolEntity extends MotionEntity {
             x0 = centerPoint.x + POINT_TOUCH_AREA + LENS_WIDTH;
         }
         if (y0 < LENS_HEIGHT) {
-            y0 = centerPoint.y +  POINT_TOUCH_AREA + LENS_HEIGHT;
+            y0 = centerPoint.y + POINT_TOUCH_AREA + LENS_HEIGHT;
         }
 
         RectF drawingRect = new RectF(
@@ -173,12 +174,18 @@ public class MeasureToolEntity extends MotionEntity {
             mZoomCanvas = new Canvas(this.mZoomBitmap);
         }
 
-        int zoom = 2;
-        int zoomedWidth = LENS_WIDTH / zoom;
-        int zoomedHeight = LENS_HEIGHT / zoom;
+        int zoomedHalfWidth = LENS_WIDTH / ZOOM / 2;
+        int zoomedHalfHeight = LENS_HEIGHT / ZOOM / 2;
         float scaleX = (float) background.getWidth() / this.mCanvas.getWidth();
         float scaleY = (float) background.getHeight() / this.mCanvas.getHeight();
-        Rect srcRect = new Rect( (int) ((centerPoint.x - zoomedWidth)* scaleX), (int) ((centerPoint.y - zoomedHeight) * scaleY), (int) ((centerPoint.x + zoomedWidth) * scaleX), (int) ((centerPoint.y + zoomedHeight)*scaleY));
+        int srcCenterX = (int) (centerPoint.x * scaleX);
+        int srcCenterY = (int) (centerPoint.y * scaleY);
+        Rect srcRect = new Rect(
+                srcCenterX - zoomedHalfWidth,
+                srcCenterY - zoomedHalfHeight,
+                srcCenterX + zoomedHalfWidth,
+                srcCenterY + zoomedHalfHeight
+        );
 
         Rect targetRect = new Rect(0, 0, LENS_WIDTH, LENS_HEIGHT);
         mZoomCanvas.save();
