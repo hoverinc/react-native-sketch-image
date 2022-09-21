@@ -274,7 +274,7 @@ public class ImageEditor extends View {
                 mTranslucentDrawingCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
             }
             // Save only path with points
-            if (mCurrentPath.points.size() > 0 ) {
+            if (mCurrentPath.points.size() > 0) {
                 allShapes.add(String.valueOf(mCurrentPath.id));
                 onDrawingStateChangedWithStroke(false);
             }
@@ -353,6 +353,9 @@ public class ImageEditor extends View {
         }
 
         if (!mEntities.isEmpty()) {
+            if (mSelectedEntity != null && mSelectedEntity instanceof MeasureToolEntity) {
+                ((MeasureToolEntity) mSelectedEntity).setBackground(mBackgroundImage);
+            }
             drawAllEntities(mSketchCanvas);
         }
     }
@@ -734,7 +737,7 @@ public class ImageEditor extends View {
      * MotionEntities related code
      **/
     public void addEntity(EntityType shapeType, String textShapeFontType, int textShapeFontSize, String textShapeText, String imageShapeAsset) {
-        boolean shouldContinue = measurementEntity != null &&  measurementEntity.isTextStep() && shapeType == EntityType.TEXT;
+        boolean shouldContinue = measurementEntity != null && measurementEntity.isTextStep() && shapeType == EntityType.TEXT;
         if (measurementEntity != null && !shouldContinue) {
             mEntities.remove(measurementEntity);
             allShapes.remove(measurementEntity.getId());
@@ -747,11 +750,11 @@ public class ImageEditor extends View {
                 break;
             case TEXT:
                 if (shouldContinue) {
-                    measurementEntity.addText(textShapeText, textShapeFontSize,  getContext().getResources().getDisplayMetrics());
+                    measurementEntity.addText(textShapeText, textShapeFontSize, getContext().getResources().getDisplayMetrics());
                     onDrawingStateChanged();
                     invalidateCanvas(true);
                     clearCurrentShape();
-                }else {
+                } else {
                     addTextEntity(textShapeFontType, textShapeFontSize, textShapeText);
                 }
                 break;
@@ -1000,7 +1003,7 @@ public class ImageEditor extends View {
     }
 
     private void selectEntity(MotionEntity entity) {
-        if (mSelectedEntity != null) {
+        if (mSelectedEntity != null && mSelectedEntity != entity) {
             mSelectedEntity.setIsSelected(false);
         }
         if (entity != null) {
@@ -1025,6 +1028,7 @@ public class ImageEditor extends View {
     private void updateSelectionOnTap(MotionEvent e) {
         updateSelectionOnTap(e.getX(), e.getY());
     }
+
     private void updateSelectionOnTap(float x, float y) {
         MotionEntity entity = findEntityAtPoint(x, y);
         boolean shouldNotifyChanges = mSelectedEntity != entity;
@@ -1300,7 +1304,7 @@ public class ImageEditor extends View {
 
     private class MoveListener extends MoveGestureDetector.SimpleOnMoveGestureListener {
 
-        boolean shouldStartMove () {
+        boolean shouldStartMove() {
             return mSelectedEntity == null || (mSelectedEntity instanceof MeasureToolEntity && mSelectedEntity.getDrawingStep() == MotionEntity.DEFAULT_DRAWING_STEP);
         }
 

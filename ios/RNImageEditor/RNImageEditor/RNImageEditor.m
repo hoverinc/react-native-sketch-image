@@ -149,6 +149,12 @@
 
         if ([entity isSelected]) {
             [entity setNeedsDisplay];
+
+            if ([entity class] == [MeasurementEntity class]){
+                CGRect entityRect = CGRectMake(0, 0, rect.size.width, rect.size.height);
+                CGImageRef imgRef = CGBitmapContextCreateImage(context);
+                [((MeasurementEntity *)entity) setBackground:imgRef];
+            }
         }
 
         [self addSubview:entity];
@@ -896,7 +902,7 @@
 }
 
 - (void)selectEntity:(MotionEntity *)entity {
-    if (self.selectedEntity) {
+    if (self.selectedEntity && self.selectedEntity != entity) {
         [self.selectedEntity setIsSelected:NO];
         [self.selectedEntity setNeedsDisplay];
     }

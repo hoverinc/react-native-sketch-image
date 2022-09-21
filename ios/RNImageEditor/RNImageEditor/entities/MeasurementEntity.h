@@ -17,6 +17,7 @@
 @property (nonatomic) UIFont *font;
 @property (nonatomic) CGSize initialBoundsSize;
 
+
 - (instancetype)initAndSetupWithParent: (NSInteger)parentWidth
                           parentHeight: (NSInteger)parentHeight
                          parentCenterX: (CGFloat)parentCenterX
@@ -34,6 +35,6 @@
 - (BOOL)isPointInEntity:(CGPoint)point;
 - (void)addText:(NSString *)text withTextSize:(NSNumber *)fontSize withFontType:(NSString *)fontType;
 - (BOOL)isTextStep;
+- (void)setBackground:(CGImageRef)imageSource;
 
 @end
-
