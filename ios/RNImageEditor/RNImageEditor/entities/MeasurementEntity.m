@@ -89,9 +89,12 @@ int aimEdge;
 
                 // draw text
                 if (i == 1 && [self text] != nil) {
+//                    CGPoint centerPoint = CGPointMake(
+//                                                      (prevPoint.x + p.x)/2, (prevPoint.y + p.y)/2);
                     CGPoint centerPoint = CGPointMake(
-                                                      (prevPoint.x + p.x)/2, (prevPoint.y + p.y)/2);
-                    [self drawText:contextRef withCenterPoint:centerPoint];
+                                                      self.textSize.width / 2 + 2 * TEXT_PADDING,
+                                                      self.textSize.height / 2 + TEXT_PADDING
+                                                      );                    [self drawText:contextRef withCenterPoint:centerPoint];
                 }
             }
             // draw actual point

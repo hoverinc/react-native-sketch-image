@@ -269,8 +269,16 @@ public class MeasureToolEntity extends MotionEntity {
         );
 
         canvas.save();
-        float translateX = centerX - textWidth / 2f;
-        float translateY = centerY - sl.getHeight() / 2f;
+        float translateX = BORDER_PADDING +  textWidth / 2f;
+        float translateY = BORDER_PADDING +  sl.getHeight() / 2f;
+
+//        // calculate text center
+//        // top x same, y above center
+//        translateY = Math.min(a.y, b.y) - POINT_TOUCH_AREA;
+//        // bottom
+//        if (translateY - sl.getHeight() < 0) {
+//            translateY = Math.max(a.y, b.y) + POINT_TOUCH_AREA;
+//        }
         canvas.translate(translateX, translateY);
 
         // background first
