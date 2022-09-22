@@ -27,32 +27,29 @@ import java.util.List;
 public class MeasureToolEntity extends MotionEntity {
     private static final int CORNER_RADIUS = 8;
     private static final int BORDER_PADDING = 16;
-
-    private final int mWidth;
-    private final int mHeight;
-    private int mStrokeColor;
-
-    private Paint mPaint;
-    private Bitmap mBitmap;
-    private Canvas mCanvas;
-    private final List<PointF> currentPoints;
-    private PointF selectedPoint;
-    private String mCurrentText;
-    private final TextPaint mTextPaint;
-    private float mScaledDensity;
-
     private static final int POINTS_COUNT = 2;
     private static final int POINT_TOUCH_AREA = 100;
+    private static final int HALF_POINT_TOUCH_AREA = POINT_TOUCH_AREA / 2;
     private static final int INNER_RADIUS = 14;
     private static final int OUTER_RADIUS = 22;
     private static final int OUTER_RADIUS_CONNECTION = OUTER_RADIUS - 1;
     private static final int STROKE_WIDTH = 4;
-
     private static final int LENS_WIDTH = 260;
     private static final int LENS_HEIGHT = 160;
     private static final int ZOOM = 2;
-    private WeakReference<Bitmap> backgroundRef;
+    private final int mWidth;
+    private final int mHeight;
+    private final List<PointF> currentPoints;
+    private final TextPaint mTextPaint;
     float zoomStrokeWidth = 2;
+    private int mStrokeColor;
+    private Paint mPaint;
+    private Bitmap mBitmap;
+    private Canvas mCanvas;
+    private PointF selectedPoint;
+    private String mCurrentText;
+    private float mScaledDensity;
+    private WeakReference<Bitmap> backgroundRef;
     private Bitmap mZoomBitmap;
     private Canvas mZoomCanvas;
 
@@ -251,6 +248,46 @@ public class MeasureToolEntity extends MotionEntity {
         return new PointF(x, y);
     }
 
+
+    private boolean isCurrentPointsInRect(RectF rect) {
+        for (int i = 0; i < currentPoints.size(); i++) {
+            PointF currentPoint = currentPoints.get(i);
+            if (rect.intersect(
+                    currentPoint.x - HALF_POINT_TOUCH_AREA,
+                    currentPoint.y - HALF_POINT_TOUCH_AREA,
+                    currentPoint.x + HALF_POINT_TOUCH_AREA,
+                    currentPoint.y + HALF_POINT_TOUCH_AREA)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private PointF getLabelStartPoint(float textWidth, float textHeight) {
+        RectF cornerRect = new RectF();
+        float textRectWidth = textWidth + 2f * BORDER_PADDING;
+        float textRectHeight = textHeight + 1.5f * BORDER_PADDING;
+        cornerRect.set(0, 0, textRectWidth, textRectHeight);
+        // Top left
+        if (!isCurrentPointsInRect(cornerRect)) {
+            return new PointF(2 * BORDER_PADDING, textRectHeight / 2f);
+        }
+        // Top right
+        cornerRect.set(getWidth() - textRectWidth, 0, getWidth(), textRectHeight);
+        if (!isCurrentPointsInRect(cornerRect)) {
+            return new PointF(getWidth() - textRectWidth, textRectHeight / 2f);
+        }
+        // Bottom right
+        cornerRect.set(getWidth() - textRectWidth, getHeight() - textRectHeight, getWidth(), getHeight());
+        if (!isCurrentPointsInRect(cornerRect)) {
+            return new PointF(getWidth() - textRectWidth, getHeight() - textHeight - 2 * BORDER_PADDING);
+        }
+
+        // Bottom left
+        return new PointF(2 * BORDER_PADDING, getHeight() - textHeight - 2 * BORDER_PADDING);
+    }
+
+
     private void drawText(PointF a, PointF b, Canvas canvas, TextPaint textPaint, Paint bgPaint, String text) {
         float centerX = (a.x + b.x) / 2;
         float centerY = (a.y + b.y) / 2;
@@ -269,8 +306,9 @@ public class MeasureToolEntity extends MotionEntity {
         );
 
         canvas.save();
-        float translateX = BORDER_PADDING +  textWidth / 2f;
-        float translateY = BORDER_PADDING +  sl.getHeight() / 2f;
+        PointF textStartPoint = getLabelStartPoint(textWidth, sl.getHeight());
+        float translateX = textStartPoint.x;
+        float translateY = textStartPoint.y;
 
 //        // calculate text center
 //        // top x same, y above center
@@ -280,7 +318,6 @@ public class MeasureToolEntity extends MotionEntity {
 //            translateY = Math.max(a.y, b.y) + POINT_TOUCH_AREA;
 //        }
         canvas.translate(translateX, translateY);
-
         // background first
         bgPaint.setStyle(Paint.Style.FILL);
         RectF bgRect = new RectF();
