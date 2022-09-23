@@ -67,6 +67,35 @@ int aimEdge;
     return self;
 }
 
+- (BOOL)isCurrentPointsInRect:(CGRect)rect {
+    for (int i=0; i < [points count]; i++) {
+        NSValue *val = [points objectAtIndex:i];
+        CGPoint p = [val CGPointValue];
+        if (CGRectIntersectsRect(rect, [self buildRect:p withSize:touchPointSize])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+- (CGPoint)getLabelPosition: (CGFloat)width withHeight:(CGFloat) height {
+    CGFloat textRectWidth = width + 4 * TEXT_PADDING;
+    CGFloat textRectHeight = height + 2 * TEXT_PADDING;
+    // Top left
+    if (![self isCurrentPointsInRect:CGRectMake(0, 0, textRectWidth, textRectHeight)]){
+        return CGPointMake(textRectWidth / 2, textRectHeight / 2);
+    }
+    // Top right
+    if (![self isCurrentPointsInRect:CGRectMake(
+                                                self.bounds.size.width - textRectWidth, 0,
+                                                textRectWidth, textRectHeight)
+    ]){
+        return CGPointMake(self.bounds.size.width - textRectWidth / 2, textRectHeight / 2);
+    }
+    // Bottom left
+    return CGPointMake(self.bounds.size.width - textRectWidth / 2,self.bounds.size.height - textRectHeight / 2 - TEXT_PADDING / 2);
+}
+
 - (void)drawContent:(CGRect)rect withinContext:(CGContextRef)contextRef {
     if ([points count] > 0) {
         for (int i=0; i < [points count]; i++) {
@@ -89,9 +118,7 @@ int aimEdge;
 
                 // draw text
                 if (i == 1 && [self text] != nil) {
-                    CGPoint centerPoint = CGPointMake(
-                                                      (prevPoint.x + p.x)/2, (prevPoint.y + p.y)/2);
-                    [self drawText:contextRef withCenterPoint:centerPoint];
+                    [self drawText:contextRef];
                 }
             }
             // draw actual point
@@ -350,7 +377,8 @@ int aimEdge;
 }
 
 
-- (void)drawText:(CGContextRef)contextRef withCenterPoint:(CGPoint)centerPoint {
+- (void)drawText:(CGContextRef)contextRef {
+
 
      self.textAttributes = @{
                             NSFontAttributeName: self.font,
@@ -358,7 +386,7 @@ int aimEdge;
                             NSParagraphStyleAttributeName: self.style
                             };
 
-
+    CGPoint centerPoint = [self getLabelPosition:self.textSize.width withHeight:self.textSize.height];
     CGRect textRect = CGRectMake(
                                  centerPoint.x - self.textSize.width/2,
                                  centerPoint.y - self.textSize.height/2,
