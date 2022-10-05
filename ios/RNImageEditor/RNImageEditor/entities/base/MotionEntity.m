@@ -25,9 +25,9 @@
                      borderStrokeColor: (UIColor *)borderStrokeColor
                      entityStrokeWidth: (CGFloat)entityStrokeWidth
                      entityStrokeColor: (UIColor *)entityStrokeColor {
-    
+
     self = [super initWithFrame:CGRectMake(parentCenterX, parentCenterY, width, height)];
-    
+
     if (self) {
         self.parentWidth = parentWidth;
         self.parentHeight = parentHeight;
@@ -43,7 +43,7 @@
         self.borderStrokeColor = borderStrokeColor;
         self.entityStrokeWidth = entityStrokeWidth;
         self.entityStrokeColor = entityStrokeColor;
-        
+
         self.backgroundColor = [UIColor clearColor];
         self.entityId = [[NSUUID UUID] UUIDString];
     }
@@ -85,7 +85,7 @@
            borderStrokeColor: (UIColor *)borderStrokeColor
            entityStrokeWidth: (CGFloat)entityStrokeWidth
            entityStrokeColor: (UIColor *)entityStrokeColor {
-    
+
     if (self.isSelected) {
         self.borderStyle = borderStyle;
         self.borderStrokeWidth = borderStrokeWidth;
@@ -104,12 +104,12 @@
         }
         CGContextRestoreGState(contextRef);
     }
-    
+
     // Draw Border
     if (self.isSelected) {
         if (contextRef) {
             CGContextSaveGState(contextRef);
-            
+
             CGContextSetLineWidth(contextRef, self.borderStrokeWidth / self.scale);
             CGContextSetStrokeColorWithColor(contextRef, [self.borderStrokeColor CGColor]);
             if (self.borderStyle == DASHED) {
@@ -117,7 +117,7 @@
                 CGContextSetLineDash(contextRef, 0.0, dashPattern, 2);
             }
             CGContextStrokeRect(contextRef, rect);
-            
+
             CGContextRestoreGState(contextRef);
         }
     }
@@ -146,6 +146,11 @@
 
 - (NSString *)getEntityId {
     return self.entityId;
+}
+
+- (void)setMeasuredSize:(NSInteger)width withHeight:(NSInteger)height {
+    self.measuredWidth = width;
+    self.measuredHeight = height;
 }
 
 @end

@@ -93,7 +93,12 @@ int aimEdge;
         return CGPointMake(self.bounds.size.width - textRectWidth / 2, textRectHeight / 2);
     }
     // Bottom left
-    return CGPointMake(self.bounds.size.width - textRectWidth / 2,self.bounds.size.height - textRectHeight / 2 - TEXT_PADDING / 2);
+    // Check for minimum visible rect
+    CGFloat calculatedHeight = self.bounds.size.height;
+    if (self.measuredHeight > 0 && self.measuredHeight < calculatedHeight) {
+        calculatedHeight = self.measuredHeight;
+    }
+    return CGPointMake(self.bounds.size.width - textRectWidth / 2, calculatedHeight - textRectHeight / 2 - TEXT_PADDING / 2);
 }
 
 - (void)drawContent:(CGRect)rect withinContext:(CGContextRef)contextRef {

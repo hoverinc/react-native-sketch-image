@@ -36,6 +36,9 @@ export default class RNImageEditor extends React.Component {
         maxStrokeWidth: PropTypes.number,
         strokeWidthStep: PropTypes.number,
 
+        measuredWidth: PropTypes.number,
+        measuredHeight: PropTypes.number,
+
         savePreference: PropTypes.func,
         onSketchSaved: PropTypes.func,
         onShapeSelectionChanged: PropTypes.func,
@@ -121,6 +124,9 @@ export default class RNImageEditor extends React.Component {
         minStrokeWidth: 3,
         maxStrokeWidth: 15,
         strokeWidthStep: 3,
+
+        measuredWidth : 0,
+        measuredHeight : 0,
 
         savePreference: null,
         onSketchSaved: () => {},
@@ -382,6 +388,8 @@ export default class RNImageEditor extends React.Component {
                     localSourceImage={this.props.localSourceImage}
                     permissionDialogTitle={this.props.permissionDialogTitle}
                     permissionDialogMessage={this.props.permissionDialogMessage}
+                    measuredWidth={this.props.measuredWidth}
+                    measuredHeight={this.props.measuredHeight}
                 />
                 <View style={{ flexDirection: "row" }}>
                     <FlatList

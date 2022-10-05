@@ -41,4 +41,6 @@
 - (void)decreaseTextEntityFontSize;
 - (void)setTextEntityText:(NSString *)newText;
 - (void)undoShape;
+- (void)setMeasuredHeight:(NSInteger)height;
+- (void)setMeasuredWidth:(NSInteger)width;
 @end

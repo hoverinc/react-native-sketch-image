@@ -27,6 +27,8 @@ class ImageEditor extends React.Component {
         style: ViewPropTypes.style,
         strokeColor: PropTypes.string,
         strokeWidth: PropTypes.number,
+        measuredWidth: PropTypes.number,
+        measuredHeight: PropTypes.number,
         onPathsChange: PropTypes.func,
         onStrokeStart: PropTypes.func,
         onStrokeChanged: PropTypes.func,
@@ -74,6 +76,8 @@ class ImageEditor extends React.Component {
         style: null,
         strokeColor: "#000000",
         strokeWidth: 3,
+        measuredWidth : 0,
+        measuredHeight : 0,
         onPathsChange: () => {
         },
         onStrokeStart: () => {
@@ -389,6 +393,8 @@ class ImageEditor extends React.Component {
                     this._initialized = true;
                     this._pathsToProcess.length > 0 && this._pathsToProcess.forEach((p) => this.addPath(p));
                 }}
+                measuredWidth={this.props.measuredWidth}
+                measuredHeight={this.props.measuredHeight}
                 {...(this.state.hasPanResponder ? this.panResponder.panHandlers : undefined)}
                 {...this.panResponder?.panHandlers}
                 onChange={(e) => {

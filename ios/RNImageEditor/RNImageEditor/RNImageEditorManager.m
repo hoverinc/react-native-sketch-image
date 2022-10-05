@@ -58,6 +58,24 @@ RCT_CUSTOM_VIEW_PROPERTY(text, NSArray, RNImageEditor)
     });
 }
 
+RCT_CUSTOM_VIEW_PROPERTY(measuredHeight, NSInteger, RNImageEditor)
+{
+    RNImageEditor *currentView = !view ? defaultView : view;
+    NSInteger number = [RCTConvert NSInteger:json];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [currentView setMeasuredHeight:number];
+    });
+}
+
+RCT_CUSTOM_VIEW_PROPERTY(measuredWidth, NSInteger, RNImageEditor)
+{
+    RNImageEditor *currentView = !view ? defaultView : view;
+    NSInteger number = [RCTConvert NSInteger:json];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [currentView setMeasuredHeight:number];
+    });
+}
+
 #pragma mark - Lifecycle
 
 - (UIView *)view
