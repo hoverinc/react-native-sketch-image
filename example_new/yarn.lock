@@ -804,9 +804,9 @@
   dependencies:
     "@hapi/hoek" "^9.0.0"
 
-"@hoverinc/react-native-sketch-canvas@https://github.com/hoverinc/react-native-sketch-image#98faa4a034b6632b41d73bd63f0502df3da847d6":
-  version "0.8.23"
-  resolved "https://github.com/hoverinc/react-native-sketch-image#98faa4a034b6632b41d73bd63f0502df3da847d6"
+"@hoverinc/react-native-sketch-canvas@https://github.com/hoverinc/react-native-sketch-image#a9970d441851cb7ab31fa4501b176f9082961a83":
+  version "0.8.29"
+  resolved "https://github.com/hoverinc/react-native-sketch-image#a9970d441851cb7ab31fa4501b176f9082961a83"
   dependencies:
     deprecated-react-native-prop-types "^2.3.0"
 

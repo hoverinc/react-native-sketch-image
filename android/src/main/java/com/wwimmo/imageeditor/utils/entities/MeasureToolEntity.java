@@ -121,12 +121,18 @@ public class MeasureToolEntity extends MotionEntity {
                     this.mCanvas.drawCircle(pointF.x, pointF.y, POINT_TOUCH_AREA, this.mPaint);
                     this.mPaint.setAlpha(255);
                 }
+                boolean hasText = mCurrentText != null;
                 if (i > 0) {
                     // path between points
                     PointF prevPointF = currentPoints.get(i - 1);
-                    drawConnection(prevPointF, pointF);
+                    drawConnection(prevPointF, pointF, !hasText);
+                    if (hasText) {
+                        drawLineIndicator(prevPointF, pointF, OUTER_RADIUS, this.mPaint);
+                    }
                 }
-                this.drawPoint(pointF, mPaint);
+                if (!hasText) {
+                    this.drawPoint(pointF, mPaint);
+                }
                 mPaint.setStrokeWidth(savedStrokeWidth);
 
                 if (i == 1 && mCurrentText != null) {
@@ -222,7 +228,7 @@ public class MeasureToolEntity extends MotionEntity {
         return Math.hypot(x2 - x1, y2 - y1);
     }
 
-    private PointF getOuterRadiusPoint(PointF startPoint, PointF endPoint, float radius) {
+    private double getAngleBetweenPoints(PointF startPoint, PointF endPoint) {
         // Build triangle
         double a = distance(startPoint.x, startPoint.y, endPoint.x, startPoint.y);
         double b = distance(endPoint.x, endPoint.y, endPoint.x, startPoint.y);
@@ -240,7 +246,11 @@ public class MeasureToolEntity extends MotionEntity {
         } else {
             theta = Math.atan(b / a);
         }
+        return theta;
+    }
 
+    private PointF getOuterRadiusPoint(PointF startPoint, PointF endPoint, float radius) {
+        double theta = getAngleBetweenPoints(startPoint, endPoint);
         float x = (float) (startPoint.x + radius * Math.cos(theta));
         float y = (float) (startPoint.y + radius * Math.sin(theta));
         // TODO done in the same way as iOS but could be reduced amount of created object if
@@ -334,10 +344,35 @@ public class MeasureToolEntity extends MotionEntity {
         canvas.restore();
     }
 
-    private void drawConnection(PointF startPoint, PointF endPoint) {
-        PointF newEnd = getOuterRadiusPoint(endPoint, startPoint, OUTER_RADIUS_CONNECTION);
-        PointF newStart = getOuterRadiusPoint(startPoint, endPoint, OUTER_RADIUS_CONNECTION);
-        mCanvas.drawLine(newStart.x, newStart.y, newEnd.x, newEnd.y, mPaint);
+    private void drawConnection(PointF startPoint, PointF endPoint, boolean hasOffset) {
+        if (hasOffset) {
+            PointF newEnd = getOuterRadiusPoint(endPoint, startPoint, OUTER_RADIUS_CONNECTION);
+            PointF newStart = getOuterRadiusPoint(startPoint, endPoint, OUTER_RADIUS_CONNECTION);
+            mCanvas.drawLine(newStart.x, newStart.y, newEnd.x, newEnd.y, mPaint);
+        } else {
+            mCanvas.drawLine(startPoint.x, startPoint.y, endPoint.x, endPoint.y, mPaint);
+        }
+
+    }
+
+    private void drawLineIndicator(PointF startPoint, PointF endPoint, int size, Paint mPaint) {
+        double thetaTop = getAngleBetweenPoints(startPoint, endPoint) - Math.PI / 2;
+        double thetaBottom = thetaTop - Math.PI;
+        // for the start point
+        float x1 = (float) (startPoint.x + size * Math.cos(thetaTop));
+        float y1 = (float) (startPoint.y + size * Math.sin(thetaTop));
+
+        float x2 = (float) (startPoint.x + size * Math.cos(thetaBottom));
+        float y2 = (float) (startPoint.y + size * Math.sin(thetaBottom));
+        mCanvas.drawLine(x1, y1, x2, y2, mPaint);
+
+        // for the end pont
+        x1 = (float) (endPoint.x + size * Math.cos(thetaTop));
+        y1 = (float) (endPoint.y + size * Math.sin(thetaTop));
+
+        x2 = (float) (endPoint.x + size * Math.cos(thetaBottom));
+        y2 = (float) (endPoint.y + size * Math.sin(thetaBottom));
+        mCanvas.drawLine(x1, y1, x2, y2, mPaint);
     }
 
     private void updatePaint(@Nullable Paint paint) {
