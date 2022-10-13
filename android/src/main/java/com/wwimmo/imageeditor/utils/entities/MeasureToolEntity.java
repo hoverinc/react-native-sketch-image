@@ -287,20 +287,20 @@ public class MeasureToolEntity extends MotionEntity {
         if (!isCurrentPointsInRect(cornerRect)) {
             return new PointF(getWidth() - textRectWidth, textRectHeight / 2f);
         }
-        // Bottom right
-        cornerRect.set(getWidth() - textRectWidth, getHeight() - textRectHeight, getWidth(), getHeight());
-        if (!isCurrentPointsInRect(cornerRect)) {
-            return new PointF(getWidth() - textRectWidth, getHeight() - textHeight - 2 * BORDER_PADDING);
+
+        int calculatedHeight = getHeight();
+        if (getMeasuredHeight() > 0 && getMeasuredHeight() < calculatedHeight) {
+            calculatedHeight = getMeasuredHeight();
         }
 
-        // Bottom left
-        return new PointF(2 * BORDER_PADDING, getHeight() - textHeight - 2 * BORDER_PADDING);
+        // Bottom right
+        return new PointF(getWidth() - textRectWidth, calculatedHeight - textHeight - 2 * BORDER_PADDING);
     }
 
 
     private void drawText(PointF a, PointF b, Canvas canvas, TextPaint textPaint, Paint bgPaint, String text) {
-        float centerX = (a.x + b.x) / 2;
-        float centerY = (a.y + b.y) / 2;
+//        float centerX = (a.x + b.x) / 2;
+//        float centerY = (a.y + b.y) / 2;
 
         Rect textRect = new Rect();
         textPaint.getTextBounds(text, 0, text.length(), textRect);

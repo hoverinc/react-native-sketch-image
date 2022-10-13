@@ -35,6 +35,8 @@ public class ImageEditorManager extends SimpleViewManager<ImageEditor> {
 
     private static final String PROPS_LOCAL_SOURCE_IMAGE = "localSourceImage";
     private static final String PROPS_TEXT = "text";
+    private static final String PROPS_MEASURED_HEIGHT = "measuredHeight";
+    private static final String PROPS_MEASURED_WIDTH = "measuredWidth";
     private static final String PROPS_SHAPE_CONFIGURATION = "shapeConfiguration";
 
     @Override
@@ -69,6 +71,16 @@ public class ImageEditorManager extends SimpleViewManager<ImageEditor> {
     @ReactProp(name = PROPS_TEXT)
     public void setText(ImageEditor viewContainer, ReadableArray text) {
         viewContainer.setCanvasText(text);
+    }
+
+    @ReactProp(name = PROPS_MEASURED_HEIGHT)
+    public void setMeasuredHeight(ImageEditor viewContainer, int measuredHeight) {
+        viewContainer.setMeasuredHeight(measuredHeight);
+    }
+
+    @ReactProp(name = PROPS_MEASURED_WIDTH)
+    public void setMeasuredWidth(ImageEditor viewContainer, int measuredWidth) {
+        viewContainer.setMeasuredWidth(measuredWidth);
     }
 
     @Override
