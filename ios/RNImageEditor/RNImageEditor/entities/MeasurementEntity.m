@@ -93,7 +93,12 @@ int aimEdge;
         return CGPointMake(self.bounds.size.width - textRectWidth / 2, textRectHeight / 2);
     }
     // Bottom left
-    return CGPointMake(self.bounds.size.width - textRectWidth / 2,self.bounds.size.height - textRectHeight / 2 - TEXT_PADDING / 2);
+    // Check for minimum visible rect
+    CGFloat calculatedHeight = self.bounds.size.height;
+    if (self.measuredHeight > 0 && self.measuredHeight < calculatedHeight) {
+        calculatedHeight = self.measuredHeight;
+    }
+    return CGPointMake(self.bounds.size.width - textRectWidth / 2, calculatedHeight - textRectHeight / 2 - TEXT_PADDING / 2);
 }
 
 - (void)drawContent:(CGRect)rect withinContext:(CGContextRef)contextRef {
@@ -110,19 +115,26 @@ int aimEdge;
                 CGContextSetAlpha(contextRef, 1);
             }
 
+            bool hasText = [self text] != nil;
             // draw line between points
+            CGContextSetStrokeColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
             if (i > 0) {
                 NSValue *preVal = [points objectAtIndex:i - 1];
                 CGPoint prevPoint = [preVal CGPointValue];
-                [self drawConnection:contextRef withStartPoint:prevPoint withEndPoint:p];
+                [self drawConnection:contextRef withStartPoint:prevPoint withEndPoint:p withOffsetEnable:!hasText];
 
                 // draw text
                 if (i == 1 && [self text] != nil) {
                     [self drawText:contextRef];
                 }
+                if (hasText) {
+                    [self drawLineIndicator:prevPoint withEndPoint:p withSize:pointSize/2 withContext:contextRef];
+                }
             }
             // draw actual point
-            [self drawPoint:contextRef withPoint:p];
+            if (!hasText){
+                [self drawPoint:contextRef withPoint:p];
+            }
         }
         if (selectedPosition != DEFAULT_SELECTED_POSITION && background != nil) {
             NSValue *val = [points objectAtIndex:selectedPosition];
@@ -245,7 +257,7 @@ int aimEdge;
     return hypot((x2 - x1), (y2 -y1));
 }
 
-- (CGPoint)getOuterRadiusPoint:(CGPoint)startPoint withEndPoint:(CGPoint)endPoint withRadius:(float) radius {
+-(double)getAngleBetweenPoints:(CGPoint)startPoint withEndPoint:(CGPoint)endPoint {
     // Build triangle
     double a = [self distance:startPoint.x withY:startPoint.y withX2:endPoint.x withY2:startPoint.y];
     double b = [self distance:endPoint.x withY:endPoint.y withX2:endPoint.x withY2:startPoint.y];
@@ -265,19 +277,59 @@ int aimEdge;
         theta = atan(b/a);
     }
 
+    return theta;
+}
+
+-(void)drawLineIndicator:(CGPoint)startPoint withEndPoint:(CGPoint)endPoint withSize:(int)size withContext:(CGContextRef)contextRef {
+    CGContextSetLineWidth(contextRef, 2);
+    CGContextSetStrokeColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
+    CGContextBeginPath(contextRef);
+    double thetaTop = [self getAngleBetweenPoints:startPoint withEndPoint:endPoint] - M_PI / 2;
+    double thetaBottom = thetaTop - M_PI;
+    // for the start point
+    float x1 = startPoint.x + size * cos(thetaTop);
+    float y1 = startPoint.y + size * sin(thetaTop);
+
+    float x2 = startPoint.x + size * cos(thetaBottom);
+    float y2 = startPoint.y + size * sin(thetaBottom);
+
+    CGContextMoveToPoint(contextRef, x1, y1);
+    CGContextAddLineToPoint(contextRef, x2, y2);
+    CGContextStrokePath(contextRef);
+
+    // for the end pont
+    x1 = endPoint.x + size * cos(thetaTop);
+    y1 = endPoint.y + size * sin(thetaTop);
+
+    x2 = endPoint.x + size * cos(thetaBottom);
+    y2 = endPoint.y + size * sin(thetaBottom);
+    CGContextMoveToPoint(contextRef, x1, y1);
+    CGContextAddLineToPoint(contextRef, x2, y2);
+    CGContextStrokePath(contextRef);
+}
+
+- (CGPoint)getOuterRadiusPoint:(CGPoint)startPoint withEndPoint:(CGPoint)endPoint withRadius:(float) radius {
+    double theta = [self getAngleBetweenPoints:startPoint withEndPoint:endPoint];
+
     float x = startPoint.x + radius * cos(theta);
     float y = startPoint.y + radius * sin(theta);
     return CGPointMake(x, y);
 }
 
-- (void)drawConnection:(CGContextRef)contextRef withStartPoint:(CGPoint)startPoint withEndPoint:(CGPoint)endPoint {
+- (void)drawConnection:(CGContextRef)contextRef withStartPoint:(CGPoint)startPoint withEndPoint:(CGPoint)endPoint withOffsetEnable:(bool)hasOffset {
     CGContextSetLineWidth(contextRef, 2);
-    CGPoint newStart = [self getOuterRadiusPoint:startPoint withEndPoint:endPoint withRadius:10];
-    CGPoint newEnd = [self getOuterRadiusPoint:endPoint withEndPoint:startPoint withRadius:10];
-
     CGContextBeginPath(contextRef);
-    CGContextMoveToPoint(contextRef, newStart.x, newStart.y);
-    CGContextAddLineToPoint(contextRef, newEnd.x, newEnd.y);
+    if (hasOffset) {
+        CGPoint newStart = [self getOuterRadiusPoint:startPoint withEndPoint:endPoint withRadius:10];
+        CGPoint newEnd = [self getOuterRadiusPoint:endPoint withEndPoint:startPoint withRadius:10];
+
+        CGContextMoveToPoint(contextRef, newStart.x, newStart.y);
+        CGContextAddLineToPoint(contextRef, newEnd.x, newEnd.y);
+    } else {
+        CGContextMoveToPoint(contextRef, startPoint.x, startPoint.y);
+        CGContextAddLineToPoint(contextRef, endPoint.x, endPoint.y);
+    }
+
     CGContextStrokePath(contextRef);
 }
 
@@ -341,15 +393,15 @@ int aimEdge;
         font = [UIFont fontWithName: fontType size: [fontSize floatValue]];
     }
     NSDictionary *textAttributes = @{
-                            NSFontAttributeName: font,
-                            NSForegroundColorAttributeName: [UIColor whiteColor],
-                            NSParagraphStyleAttributeName: style
-                            };
+        NSFontAttributeName: font,
+        NSForegroundColorAttributeName: [UIColor whiteColor],
+        NSParagraphStyleAttributeName: style
+    };
     CGRect initialTextRect = [text boundingRectWithSize:CGSizeMake([self parentWidth], CGFLOAT_MAX)
 
-                                              options:NSStringDrawingUsesLineFragmentOrigin
-                                           attributes:textAttributes
-                                              context:nil];
+                                                options:NSStringDrawingUsesLineFragmentOrigin
+                                             attributes:textAttributes
+                                                context:nil];
     self.style = [[NSParagraphStyle defaultParagraphStyle] mutableCopy];
     [self.style setAlignment:NSTextAlignmentCenter];
     [self.style setLineHeightMultiple:1.05];
@@ -360,10 +412,10 @@ int aimEdge;
         self.font = [UIFont fontWithName: self.fontType size: self.fontSize];
     }
     self.textAttributes = @{
-                            NSFontAttributeName: self.font,
-                            NSForegroundColorAttributeName: self.entityStrokeColor,
-                            NSParagraphStyleAttributeName: self.style
-                            };
+        NSFontAttributeName: self.font,
+        NSForegroundColorAttributeName: self.entityStrokeColor,
+        NSParagraphStyleAttributeName: self.style
+    };
     CGRect textRect = [self.text boundingRectWithSize:CGSizeMake(self.bounds.size.width, CGFLOAT_MAX)
                                               options:NSStringDrawingUsesLineFragmentOrigin
                                            attributes:self.textAttributes
@@ -380,11 +432,11 @@ int aimEdge;
 - (void)drawText:(CGContextRef)contextRef {
 
 
-     self.textAttributes = @{
-                            NSFontAttributeName: self.font,
-                            NSForegroundColorAttributeName: [UIColor whiteColor],
-                            NSParagraphStyleAttributeName: self.style
-                            };
+    self.textAttributes = @{
+        NSFontAttributeName: self.font,
+        NSForegroundColorAttributeName: [UIColor whiteColor],
+        NSParagraphStyleAttributeName: self.style
+    };
 
     CGPoint centerPoint = [self getLabelPosition:self.textSize.width withHeight:self.textSize.height];
     CGRect textRect = CGRectMake(

@@ -1,19 +1,19 @@
 package com.wwimmo.imageeditor.utils.entities;
 
+import android.content.res.Resources;
 import android.graphics.Canvas;
-import android.graphics.Path;
-import android.graphics.DashPathEffect;
 import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
+import android.util.TypedValue;
+
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import android.util.Log;
 
 import com.wwimmo.imageeditor.utils.Utility;
-import com.wwimmo.imageeditor.utils.entities.BorderStyle;
 import com.wwimmo.imageeditor.utils.layers.Layer;
 
 import java.util.UUID;
@@ -30,31 +30,12 @@ public abstract class MotionEntity {
      * transformation matrix for the entity
      */
     protected final Matrix matrix = new Matrix();
-
     /**
-     * true - entity is selected and need to draw it's border
-     * false - not selected, no need to draw it's border
+     * Initial points of the entity
+     *
+     * @see #destPoints
      */
-    private boolean isSelected;
-
-    /**
-     * maximum scale of the initial image, so that
-     * the entity still fits within the parent canvas
-     */
-    protected float holyScale;
-
-    /**
-     * width of canvas the entity is drawn in
-     */
-    @IntRange(from = 0)
-    protected int canvasWidth;
-
-    /**
-     * height of canvas the entity is drawn in
-     */
-    @IntRange(from = 0)
-    protected int canvasHeight;
-
+    protected final float[] srcPoints = new float[10];  // x0, y0, x1, y1, x2, y2, x3, y3, x0, y0
     /**
      * Destination points of the entity
      * 5 points. Size of array - 10; Starting upper left corner, clockwise
@@ -62,20 +43,36 @@ public abstract class MotionEntity {
      * NOTE: saved as a field variable in order to avoid creating array in draw()-like methods
      */
     private final float[] destPoints = new float[10]; // x0, y0, x1, y1, x2, y2, x3, y3, x0, y0
-
+    private final PointF pA = new PointF();
+    private final PointF pB = new PointF();
+    private final PointF pC = new PointF();
+    private final PointF pD = new PointF();
     /**
-     * Initial points of the entity
-     * @see #destPoints
+     * maximum scale of the initial image, so that
+     * the entity still fits within the parent canvas
      */
-    protected final float[] srcPoints = new float[10];  // x0, y0, x1, y1, x2, y2, x3, y3, x0, y0
-
+    protected float holyScale;
+    /**
+     * width of canvas the entity is drawn in
+     */
+    @IntRange(from = 0)
+    protected int canvasWidth;
+    /**
+     * height of canvas the entity is drawn in
+     */
+    @IntRange(from = 0)
+    protected int canvasHeight;
+    /**
+     * true - entity is selected and need to draw it's border
+     * false - not selected, no need to draw it's border
+     */
+    private boolean isSelected;
     @NonNull
     private Paint borderPaint = new Paint();
-
     @NonNull
     private BorderStyle borderStyle = BorderStyle.DASHED;
-
-    private String id;
+    private final String id;
+    private int measuredWidth, measuredHeight;
 
     public MotionEntity(@NonNull Layer layer,
                         @IntRange(from = 1) int canvasWidth,
@@ -174,16 +171,12 @@ public abstract class MotionEntity {
                 1.0F * (moveToCenter.y - currentCenter.y) / canvasHeight);
     }
 
-    private final PointF pA = new PointF();
-    private final PointF pB = new PointF();
-    private final PointF pC = new PointF();
-    private final PointF pD = new PointF();
-
     /**
      * For more info:
      * <a href="http://math.stackexchange.com/questions/190111/how-to-check-if-a-point-is-inside-a-rectangle">StackOverflow: How to check point is in rectangle</a>
      * <p>NOTE: it's easier to apply the same transformation matrix (calculated before) to the original source points, rather than
      * calculate the result points ourselves
+     *
      * @param point point
      * @return true if point (x, y) is inside the triangle
      */
@@ -208,7 +201,7 @@ public abstract class MotionEntity {
     /**
      * http://judepereira.com/blog/calculate-the-real-scale-factor-and-the-angle-of-rotation-from-an-android-matrix/
      *
-     * @param canvas Canvas to draw
+     * @param canvas       Canvas to draw
      * @param drawingPaint Paint to use during drawing
      */
     public final void draw(@NonNull Canvas canvas, @Nullable Paint drawingPaint) {
@@ -277,10 +270,11 @@ public abstract class MotionEntity {
 
     /**
      * Execute undo operation on the entity if possible. By default return false.
+     *
      * @return true in case of event handled; false - otherwise, entity could be removed;
      */
     public boolean undo() {
-        return  false;
+        return false;
     }
 
     @Override
@@ -295,18 +289,30 @@ public abstract class MotionEntity {
 
     /**
      * Return the current number of drawing step. Used for composite shapes.
+     *
      * @return
      */
     public int getDrawingStep() {
         return DEFAULT_DRAWING_STEP;
     }
 
-
     public abstract String getShapeType();
 
-
-    public String getId(){
+    public String getId() {
         return id;
     }
 
+    public void setMeasuredSize(int width, int height) {
+        this.measuredWidth = width;
+        this.measuredHeight = height;
+    }
+
+
+    public int getMeasuredWidth() {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, measuredWidth, Resources.getSystem().getDisplayMetrics());
+    }
+
+    public int getMeasuredHeight() {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, measuredHeight, Resources.getSystem().getDisplayMetrics());
+    }
 }

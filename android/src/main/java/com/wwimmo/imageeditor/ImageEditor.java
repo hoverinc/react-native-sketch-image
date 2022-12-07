@@ -77,6 +77,8 @@ public class ImageEditor extends View {
     private final ArrayList<SketchData> mPaths = new ArrayList<SketchData>();
     private SketchData mCurrentPath = null;
     private String currentFilePath = null;
+    private int measuredHeight, measuredWidth;
+
 
     // Gesture Detection
     private final ScaleGestureDetector mScaleGestureDetector;
@@ -644,6 +646,15 @@ public class ImageEditor extends View {
         }
     }
 
+    public void setMeasuredHeight(int measuredHeight){
+        this.measuredHeight = measuredHeight;
+    }
+
+    public void setMeasuredWidth(int measuredWidth){
+        this.measuredWidth = measuredWidth;
+    }
+
+
     public void setCanvasText(ReadableArray aText) {
         mArrCanvasText.clear();
         mArrSketchOnText.clear();
@@ -967,7 +978,9 @@ public class ImageEditor extends View {
         paint.setStrokeWidth(mEntityStrokeWidth);
 
         for (int i = 0; i < mEntities.size(); i++) {
-            mEntities.get(i).draw(canvas, paint);
+            MotionEntity me = mEntities.get(i);
+            me.setMeasuredSize(measuredWidth, measuredHeight);
+            me.draw(canvas, paint);
         }
     }
 

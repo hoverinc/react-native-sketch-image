@@ -35,6 +35,8 @@
     NSString *_currentFilePath;
 
     NSArray *_arrTextOnSketch, *_arrSketchOnText;
+    int measuredHeight;
+    int measuredWidth;
 }
 
 - (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher
@@ -147,12 +149,14 @@
                    entityStrokeWidth:self.entityStrokeWidth
                    entityStrokeColor:self.entityStrokeColor];
 
+        [entity setMeasuredSize:measuredWidth withHeight:measuredHeight];
         if ([entity isSelected]) {
             [entity setNeedsDisplay];
 
             if ([entity class] == [MeasurementEntity class]){
                 CGRect entityRect = CGRectMake(0, 0, rect.size.width, rect.size.height);
                 CGImageRef imgRef = CGBitmapContextCreateImage(context);
+                [((MeasurementEntity *)entity) setBackground:imgRef];
                 [((MeasurementEntity *)entity) setBackground:imgRef];
             }
         }
@@ -230,6 +234,14 @@
         }
     }
     return NO;
+}
+
+- (void)setMeasuredHeight:(NSInteger)height {
+    measuredHeight = (int) height;
+}
+
+- (void)setMeasuredWidth:(NSInteger)width {
+    measuredWidth = (int) width;
 }
 
 - (void)setCanvasText:(NSArray *)aText {

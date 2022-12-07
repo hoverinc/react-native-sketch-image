@@ -33,6 +33,8 @@ static const int DEFAULT_DRAWING_STEP = -1 ;
 @property (nonatomic) CGFloat entityStrokeWidth;
 @property (nonatomic) UIColor* entityStrokeColor;
 @property (nonatomic) NSString* entityId;
+@property (nonatomic) NSInteger measuredWidth;
+@property (nonatomic) NSInteger measuredHeight;
 
 
 - (instancetype)initAndSetupWithParent: (NSInteger)parentWidth
@@ -64,5 +66,6 @@ static const int DEFAULT_DRAWING_STEP = -1 ;
 - (int)getDrawingStep;
 - (NSString *)getShapeType;
 - (NSString *)getEntityId;
+- (void)setMeasuredSize: (NSInteger)width withHeight:(NSInteger)height;
 
 @end

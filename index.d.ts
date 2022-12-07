@@ -1,5 +1,6 @@
 import * as React from "react";
 import { ViewProperties, StyleProp, ViewStyle } from "react-native";
+import PropTypes from "prop-types";
 
 type ImageType = "png" | "jpg";
 
@@ -89,7 +90,8 @@ export interface ImageEditorProps {
     text?: CanvasText[];
     localSourceImage?: LocalSourceImage;
     touchEnabled?: boolean;
-
+    measuredWidth?: number,
+    measuredHeight?: number,
     /**
      * {
      *    shapeBorderColor: string,
@@ -202,6 +204,9 @@ export interface RNImageEditorProps {
     minStrokeWidth?: number;
     maxStrokeWidth?: number;
     strokeWidthStep?: number;
+
+    measuredWidth?: number,
+    measuredHeight?: number,
 
     /**
      * @param imageType "png" or "jpg"
