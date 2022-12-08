@@ -1251,24 +1251,8 @@ public class ImageEditor extends View {
 
 
     private class TapsListener extends GestureDetector.SimpleOnGestureListener {
-        @Override
-        public boolean onDoubleTap(MotionEvent e) {
-            return mSelectedEntity != null;
-        }
 
-        @Override
-        public boolean onDown(MotionEvent e) {
-            return super.onDown(e);
-        }
-
-        @Override
-        public void onLongPress(MotionEvent e) {
-            // TODO: We may not need this...
-            // updateOnLongPress(e);
-        }
-
-        @Override
-        public boolean onSingleTapUp(MotionEvent e) {
+        private void handleAddShape(MotionEvent e) {
             // handle adding items to measurement tool
             if (measurementEntity != null) {
                 int prevStep = measurementEntity.getDrawingStep();
@@ -1291,7 +1275,28 @@ public class ImageEditor extends View {
                 // Fires onShapeSelectionChanged (JS-PanResponder enabling/disabling)
                 updateSelectionOnTap(e);
             }
+        }
 
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            return mSelectedEntity != null;
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            return super.onDown(e);
+        }
+
+        @Override
+        public void onLongPress(MotionEvent e) {
+            // TODO: We may not need this...
+            // updateOnLongPress(e);
+            handleAddShape(e);
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e) {
+            handleAddShape(e);
             return true;
         }
     }
@@ -1323,18 +1328,34 @@ public class ImageEditor extends View {
 
     private class MoveListener extends MoveGestureDetector.SimpleOnMoveGestureListener {
 
+        private boolean shouldUpdateOnEnd = false;
+        private boolean isInProgress = false;
+
         boolean shouldStartMove() {
             return mSelectedEntity == null || mSelectedEntity instanceof MeasureToolEntity;
         }
 
         @Override
         public boolean onMoveBegin(MoveGestureDetector detector) {
+            shouldUpdateOnEnd = false;
             MotionEvent startEvent = detector.getPrevEvent();
             if (shouldStartMove() && startEvent != null && measurementEntity == null) {
                 // Try to select shape on the start of the move
                 updateSelectionOnTap(startEvent.getX(), startEvent.getY());
             }else {
-                return measurementEntity == null || measurementEntity.pointInLayerRect(new PointF(startEvent.getX(), startEvent.getY()));
+                if (measurementEntity != null) {
+                    // move selected point
+                    if (measurementEntity.pointInLayerRect(new PointF(startEvent.getX(), startEvent.getY()))) {
+                        return true;
+                    } else {
+                        if (measurementEntity.getDrawingStep() < 2) {
+                            shouldUpdateOnEnd = true;
+                            isInProgress = measurementEntity.addPoint(startEvent.getX(), startEvent.getY());
+                            return true;
+                        }
+                    }
+                }
+                return measurementEntity == null;
             }
             return true;
         }
@@ -1352,6 +1373,18 @@ public class ImageEditor extends View {
         public void onMoveEnd(MoveGestureDetector detector) {
             // Left item selected
             super.onMoveEnd(detector);
+            if (shouldUpdateOnEnd) {
+                if (isInProgress) {
+                    invalidateCanvas(true);
+                    onDrawingStateChanged();
+                } else {
+                    // Select measurement tool to have possibility to continue drawing
+                    onDrawingStateChanged();
+                    clearCurrentShape();
+                }
+            }
+            shouldUpdateOnEnd = false;
+            isInProgress = false;
         }
     }
 }
