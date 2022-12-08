@@ -430,7 +430,9 @@ public class MeasureToolEntity extends MotionEntity {
 
     public boolean addPoint(float x, float y) {
         if (currentPoints.size() < POINTS_COUNT) {
-            currentPoints.add(new PointF(x, y));
+            PointF point = new PointF(x, y);
+            currentPoints.add(point);
+            selectedPoint = point;
             return currentPoints.size() < POINTS_COUNT || mCurrentText == null;
         }
         return mCurrentText == null;
@@ -513,8 +515,6 @@ public class MeasureToolEntity extends MotionEntity {
 
     @Override
     public int getDrawingStep() {
-        // If point is selected - them drawing has finished
-        if (selectedPoint != null) return DEFAULT_DRAWING_STEP;
         if (currentPoints.size() < POINTS_COUNT) {
             return currentPoints.size();
         } else {

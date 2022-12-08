@@ -1271,14 +1271,20 @@ public class ImageEditor extends View {
         public boolean onSingleTapUp(MotionEvent e) {
             // handle adding items to measurement tool
             if (measurementEntity != null) {
-                boolean inProgress = measurementEntity.addPoint(e.getX(), e.getY());
-                if (inProgress) {
-                    invalidateCanvas(true);
-                    onDrawingStateChanged();
-                } else {
-                    // Select measurement tool to have possibility to continue drawing
-                    onDrawingStateChanged();
-                    clearCurrentShape();
+                int prevStep = measurementEntity.getDrawingStep();
+                boolean isSelectedPoint = measurementEntity.pointInLayerRect(new PointF(e.getX(), e.getY()));
+                if (!isSelectedPoint) {
+                    boolean inProgress = measurementEntity.addPoint(e.getX(), e.getY());
+                    if (inProgress) {
+                        invalidateCanvas(true);
+                        if (prevStep != mSelectedEntity.getDrawingStep()) {
+                            onDrawingStateChanged();
+                        }
+                    } else {
+                        // Select measurement tool to have possibility to continue drawing
+                        onDrawingStateChanged();
+                        clearCurrentShape();
+                    }
                 }
             } else {
                 // Update mSelectedEntity.
@@ -1318,15 +1324,17 @@ public class ImageEditor extends View {
     private class MoveListener extends MoveGestureDetector.SimpleOnMoveGestureListener {
 
         boolean shouldStartMove() {
-            return mSelectedEntity == null || (mSelectedEntity instanceof MeasureToolEntity && mSelectedEntity.getDrawingStep() == MotionEntity.DEFAULT_DRAWING_STEP);
+            return mSelectedEntity == null || mSelectedEntity instanceof MeasureToolEntity;
         }
 
         @Override
         public boolean onMoveBegin(MoveGestureDetector detector) {
             MotionEvent startEvent = detector.getPrevEvent();
-            if (shouldStartMove() && startEvent != null) {
+            if (shouldStartMove() && startEvent != null && measurementEntity == null) {
                 // Try to select shape on the start of the move
                 updateSelectionOnTap(startEvent.getX(), startEvent.getY());
+            }else {
+                return measurementEntity == null || measurementEntity.pointInLayerRect(new PointF(startEvent.getX(), startEvent.getY()));
             }
             return true;
         }
