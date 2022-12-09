@@ -52,6 +52,7 @@ public class MeasureToolEntity extends MotionEntity {
     private WeakReference<Bitmap> backgroundRef;
     private Bitmap mZoomBitmap;
     private Canvas mZoomCanvas;
+    private boolean focused;
 
     public MeasureToolEntity(@NonNull Layer layer,
                              @IntRange(from = 1) int canvasWidth,
@@ -114,7 +115,7 @@ public class MeasureToolEntity extends MotionEntity {
             for (int i = 0; i < currentPoints.size(); i++) {
                 PointF pointF = currentPoints.get(i);
 
-                if (pointF == selectedPoint) {
+                if (pointF == selectedPoint && focused) {
                     // highlight point
                     this.mPaint.setAlpha(100);
                     this.mPaint.setStyle(Paint.Style.FILL);
@@ -142,7 +143,7 @@ public class MeasureToolEntity extends MotionEntity {
                     );
                 }
             }
-            if (selectedPoint != null && backgroundRef.get() != null) {
+            if (selectedPoint != null && backgroundRef.get() != null && focused) {
                 this.drawZoomLens(selectedPoint, backgroundRef.get());
             }
             mPaint.setStrokeWidth(savedStrokeWidth);
@@ -433,6 +434,7 @@ public class MeasureToolEntity extends MotionEntity {
             PointF point = new PointF(x, y);
             currentPoints.add(point);
             selectedPoint = point;
+            setFocused(true);
             return currentPoints.size() < POINTS_COUNT || mCurrentText == null;
         }
         return mCurrentText == null;
@@ -451,6 +453,7 @@ public class MeasureToolEntity extends MotionEntity {
     @Override
     public boolean pointInLayerRect(PointF point) {
         selectedPoint = getSelectedPointInArea(point);
+        setFocused(selectedPoint != null);
         return selectedPoint != null;
     }
 
@@ -547,5 +550,10 @@ public class MeasureToolEntity extends MotionEntity {
         if (!isSelected) {
             selectedPoint = null;
         }
+    }
+
+
+    public void setFocused(boolean focused) {
+        this.focused = focused;
     }
 }
