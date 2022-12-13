@@ -20,6 +20,7 @@
 @property (nonatomic) UIRotationGestureRecognizer *rotateGesture;
 @property (nonatomic) UIPanGestureRecognizer *moveGesture;
 @property (nonatomic) UIPinchGestureRecognizer *scaleGesture;
+@property (nonatomic) UILongPressGestureRecognizer *longPressGesture;
 
 - (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher;
 

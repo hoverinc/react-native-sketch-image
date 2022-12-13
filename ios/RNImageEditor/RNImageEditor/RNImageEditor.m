@@ -76,11 +76,16 @@
 
         self.scaleGesture = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(handleScale:)];
         self.scaleGesture.delegate = self;
+        
+        self.longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+        self.longPressGesture.delegate = self;
+        self.longPressGesture.numberOfTapsRequired = 1;
 
         [self addGestureRecognizer:self.tapGesture];
         [self addGestureRecognizer:self.rotateGesture];
         [self addGestureRecognizer:self.moveGesture];
         [self addGestureRecognizer:self.scaleGesture];
+        [self addGestureRecognizer:self.longPressGesture];
 
     }
     return self;
@@ -1065,6 +1070,7 @@
             if (!isSelectedPoint) {
                 int prevStep = [_measurementEntity getDrawingStep];
                 bool inProgress = [_measurementEntity addPoint:tapLocation];
+                [_measurementEntity setLocalFocused:false];
                 [_measurementEntity setNeedsDisplay];
                 if (prevStep != [_measurementEntity getDrawingStep]) {
                     if (!inProgress) {

@@ -213,6 +213,7 @@ int aimEdge;
     if ([points count] < MAX_POINTS_COUNT) {
         [points addObject: [NSValue valueWithCGPoint:point]];
         [self setLocalFocused:true];
+        selectedPosition = [points count] - 1;
         return [points count] < MAX_POINTS_COUNT || [self text] == nil;
     }
     return [self text] == nil;
@@ -241,7 +242,7 @@ int aimEdge;
 }
 
 - (void)moveEntityTo:(CGPoint)locationDiff {
-    if (selectedPosition != DEFAULT_SELECTED_POSITION){
+    if (selectedPosition != DEFAULT_SELECTED_POSITION && [points count] > selectedPosition){
         NSValue *val = [points objectAtIndex:selectedPosition];
         CGPoint p = [val CGPointValue];
         p.x = p.x + locationDiff.x;
