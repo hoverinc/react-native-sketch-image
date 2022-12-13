@@ -107,7 +107,7 @@ int aimEdge;
             NSValue *val = [points objectAtIndex:i];
             CGPoint p = [val CGPointValue];
             // draw highlight
-            if (selectedPosition == i) {
+            if (selectedPosition == i && self.localFocused) {
                 CGRect highlightCircleRect = [self buildRect:p withSize:touchPointSize];
                 CGContextSetAlpha(contextRef, 0.5);
                 CGContextSetFillColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
@@ -136,7 +136,7 @@ int aimEdge;
                 [self drawPoint:contextRef withPoint:p];
             }
         }
-        if (selectedPosition != DEFAULT_SELECTED_POSITION && background != nil) {
+        if (selectedPosition != DEFAULT_SELECTED_POSITION && background != nil && self.localFocused) {
             NSValue *val = [points objectAtIndex:selectedPosition];
             CGPoint p = [val CGPointValue];
             [self drawZoomLens:p withinContext:contextRef withBackground:background];
@@ -212,6 +212,7 @@ int aimEdge;
 
     if ([points count] < MAX_POINTS_COUNT) {
         [points addObject: [NSValue valueWithCGPoint:point]];
+        [self setLocalFocused:true];
         return [points count] < MAX_POINTS_COUNT || [self text] == nil;
     }
     return [self text] == nil;
@@ -219,17 +220,18 @@ int aimEdge;
 
 - (BOOL)isPointInEntity:(CGPoint)point {
     selectedPosition = DEFAULT_SELECTED_POSITION;
-    if ([points count] == MAX_POINTS_COUNT) {
-        for (int i=0; i < [points count]; i++) {
-            NSValue *val = [points objectAtIndex:i];
-            CGPoint p = [val CGPointValue];
-            CGRect pointRect = [self buildRect:p withSize:touchPointSize];
-            if (CGRectContainsPoint(pointRect, point)) {
-                selectedPosition = i;
-                return true;
-            }
+    for (int i=0; i < [points count]; i++) {
+        NSValue *val = [points objectAtIndex:i];
+        CGPoint p = [val CGPointValue];
+        CGRect pointRect = [self buildRect:p withSize:touchPointSize];
+        if (CGRectContainsPoint(pointRect, point)) {
+            selectedPosition = i;
+            [self setLocalFocused:true];
+            return true;
         }
     }
+    
+    [self setLocalFocused:false];
     return false;
 }
 
@@ -367,8 +369,6 @@ int aimEdge;
 
 
 - (NSInteger)getDrawingStep {
-    // If point is selected or text added - them drawing has finished
-    if (selectedPosition != DEFAULT_SELECTED_POSITION) return DEFAULT_DRAWING_STEP;
     if ([points count] < MAX_POINTS_COUNT) {
         return [points count];
     }else {

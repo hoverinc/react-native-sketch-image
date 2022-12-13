@@ -16,6 +16,7 @@
 @property (nonatomic) NSString *fontType;
 @property (nonatomic) UIFont *font;
 @property (nonatomic) CGSize initialBoundsSize;
+@property (nonatomic) BOOL localFocused;
 
 
 - (instancetype)initAndSetupWithParent: (NSInteger)parentWidth
