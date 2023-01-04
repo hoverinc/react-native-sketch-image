@@ -75,19 +75,48 @@ public class ImageEditor extends View {
     private final List<String> allShapes = new ArrayList();
     // Data
     private final ArrayList<SketchData> mPaths = new ArrayList<SketchData>();
-    private SketchData mCurrentPath = null;
-    private String currentFilePath = null;
-    private int measuredHeight, measuredWidth;
-
-
     // Gesture Detection
     private final ScaleGestureDetector mScaleGestureDetector;
     private final RotateGestureDetector mRotateGestureDetector;
     private final MoveGestureDetector mMoveGestureDetector;
     private final GestureDetectorCompat mGestureDetectorCompat;
-
     // Shapes/Entities
     private final ArrayList<MotionEntity> mEntities = new ArrayList<MotionEntity>();
+    // Text
+    private final ArrayList<CanvasText> mArrCanvasText = new ArrayList<CanvasText>();
+    private final ArrayList<CanvasText> mArrTextOnSketch = new ArrayList<CanvasText>();
+    private final ArrayList<CanvasText> mArrSketchOnText = new ArrayList<CanvasText>();
+    // General
+    private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final ThemedReactContext mContext;
+    /**
+     * Gesture Listeners
+     * <p>
+     * Connect the gesture detectors to the native touch listener. The
+     * JS-PanResponder is disabled while a MotionEntity is selected immediately. The
+     * JS-PanResponder is enabled again with a 150ms delay, through the
+     * onShapeSelectionChanged event, when the MotionEntity is deselected.
+     * <p>
+     * The 100-150ms delay is there to ensure no point is drawn when deselecting a
+     * shape.
+     **/
+    private final View.OnTouchListener mOnTouchListener = new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            if (mScaleGestureDetector != null) {
+                mGestureDetectorCompat.onTouchEvent(event);
+                mScaleGestureDetector.onTouchEvent(event);
+                mRotateGestureDetector.onTouchEvent(event);
+                mMoveGestureDetector.onTouchEvent(event);
+                return true;
+            } else {
+                return false;
+            }
+        }
+    };
+    private SketchData mCurrentPath = null;
+    private String currentFilePath = null;
+    private int measuredHeight, measuredWidth;
     private MotionEntity mSelectedEntity;
     private MeasureToolEntity measurementEntity;
     private int mEntityBorderColor = Color.TRANSPARENT;
@@ -95,24 +124,14 @@ public class ImageEditor extends View {
     private float mEntityBorderStrokeWidth = 1;
     private float mEntityStrokeWidth = 5;
     private int mEntityStrokeColor = Color.BLACK;
-
-    // Text
-    private final ArrayList<CanvasText> mArrCanvasText = new ArrayList<CanvasText>();
-    private final ArrayList<CanvasText> mArrTextOnSketch = new ArrayList<CanvasText>();
-    private final ArrayList<CanvasText> mArrSketchOnText = new ArrayList<CanvasText>();
     private Typeface mTypeface;
-
     // Bitmap
     private Bitmap mDrawingBitmap = null, mTranslucentDrawingBitmap = null;
     private Bitmap mBackgroundImage;
     private Canvas mDrawingCanvas = null, mTranslucentDrawingCanvas = null;
     private int mOriginalBitmapWidth, mOriginalBitmapHeight;
     private String mBitmapContentMode;
-
-    // General
-    private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Canvas mSketchCanvas = null;
-    private final ThemedReactContext mContext;
     private boolean mDisableHardwareAccelerated = false;
     private boolean mNeedsFullRedraw = true;
 
@@ -127,6 +146,23 @@ public class ImageEditor extends View {
 
         // Is initialized at bottom of class w/ other GestureDetectors
         setOnTouchListener(mOnTouchListener);
+    }
+
+    public static Bitmap getBitmapFromDrawable(Context context, @DrawableRes int drawableId) {
+        Drawable drawable = AppCompatResources.getDrawable(context, drawableId);
+
+        if (drawable instanceof BitmapDrawable) {
+            return ((BitmapDrawable) drawable).getBitmap();
+        } else if (drawable instanceof VectorDrawableCompat || drawable instanceof VectorDrawable) {
+            Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+            drawable.draw(canvas);
+
+            return bitmap;
+        } else {
+            throw new IllegalArgumentException("unsupported drawable type");
+        }
     }
 
     public String getBase64(String format, boolean transparent, boolean includeImage, boolean includeText, boolean cropToImageSize) {
@@ -579,7 +615,6 @@ public class ImageEditor extends View {
         }
     }
 
-
     public boolean openImageFile(String filename, String directory, String mode) {
         if (filename != null) {
             currentFilePath = filename;
@@ -629,31 +664,13 @@ public class ImageEditor extends View {
         return false;
     }
 
-    public static Bitmap getBitmapFromDrawable(Context context, @DrawableRes int drawableId) {
-        Drawable drawable = AppCompatResources.getDrawable(context, drawableId);
-
-        if (drawable instanceof BitmapDrawable) {
-            return ((BitmapDrawable) drawable).getBitmap();
-        } else if (drawable instanceof VectorDrawableCompat || drawable instanceof VectorDrawable) {
-            Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(bitmap);
-            drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-            drawable.draw(canvas);
-
-            return bitmap;
-        } else {
-            throw new IllegalArgumentException("unsupported drawable type");
-        }
-    }
-
-    public void setMeasuredHeight(int measuredHeight){
+    public void setMeasuredHeight(int measuredHeight) {
         this.measuredHeight = measuredHeight;
     }
 
-    public void setMeasuredWidth(int measuredWidth){
+    public void setMeasuredWidth(int measuredWidth) {
         this.measuredWidth = measuredWidth;
     }
-
 
     public void setCanvasText(ReadableArray aText) {
         mArrCanvasText.clear();
@@ -1132,7 +1149,6 @@ public class ImageEditor extends View {
         }
     }
 
-
     public void increaseTextEntityFontSize() {
         TextEntity textEntity = getSelectedTextEntity();
         if (textEntity != null) {
@@ -1223,34 +1239,33 @@ public class ImageEditor extends View {
 
     }
 
-    /**
-     * Gesture Listeners
-     * <p>
-     * Connect the gesture detectors to the native touch listener. The
-     * JS-PanResponder is disabled while a MotionEntity is selected immediately. The
-     * JS-PanResponder is enabled again with a 150ms delay, through the
-     * onShapeSelectionChanged event, when the MotionEntity is deselected.
-     * <p>
-     * The 100-150ms delay is there to ensure no point is drawn when deselecting a
-     * shape.
-     **/
-    private final View.OnTouchListener mOnTouchListener = new View.OnTouchListener() {
-        @Override
-        public boolean onTouch(View v, MotionEvent event) {
-            if (mScaleGestureDetector != null) {
-                mGestureDetectorCompat.onTouchEvent(event);
-                mScaleGestureDetector.onTouchEvent(event);
-                mRotateGestureDetector.onTouchEvent(event);
-                mMoveGestureDetector.onTouchEvent(event);
-                return true;
+    private class TapsListener extends GestureDetector.SimpleOnGestureListener {
+
+        private void handleAddShape(MotionEvent e) {
+            // handle adding items to measurement tool
+            if (measurementEntity != null) {
+                int prevStep = measurementEntity.getDrawingStep();
+                boolean isSelectedPoint = measurementEntity.pointInLayerRect(new PointF(e.getX(), e.getY()));
+                if (!isSelectedPoint) {
+                    boolean inProgress = measurementEntity.addPoint(e.getX(), e.getY());
+                    if (inProgress) {
+                        invalidateCanvas(true);
+                        if (prevStep != mSelectedEntity.getDrawingStep()) {
+                            onDrawingStateChanged();
+                        }
+                    } else {
+                        // Select measurement tool to have possibility to continue drawing
+                        onDrawingStateChanged();
+                        clearCurrentShape();
+                    }
+                }
             } else {
-                return false;
+                // Update mSelectedEntity.
+                // Fires onShapeSelectionChanged (JS-PanResponder enabling/disabling)
+                updateSelectionOnTap(e);
             }
         }
-    };
 
-
-    private class TapsListener extends GestureDetector.SimpleOnGestureListener {
         @Override
         public boolean onDoubleTap(MotionEvent e) {
             return mSelectedEntity != null;
@@ -1265,27 +1280,12 @@ public class ImageEditor extends View {
         public void onLongPress(MotionEvent e) {
             // TODO: We may not need this...
             // updateOnLongPress(e);
+            handleAddShape(e);
         }
 
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
-            // handle adding items to measurement tool
-            if (measurementEntity != null) {
-                boolean inProgress = measurementEntity.addPoint(e.getX(), e.getY());
-                if (inProgress) {
-                    invalidateCanvas(true);
-                    onDrawingStateChanged();
-                } else {
-                    // Select measurement tool to have possibility to continue drawing
-                    onDrawingStateChanged();
-                    clearCurrentShape();
-                }
-            } else {
-                // Update mSelectedEntity.
-                // Fires onShapeSelectionChanged (JS-PanResponder enabling/disabling)
-                updateSelectionOnTap(e);
-            }
-
+            handleAddShape(e);
             return true;
         }
     }
@@ -1317,16 +1317,34 @@ public class ImageEditor extends View {
 
     private class MoveListener extends MoveGestureDetector.SimpleOnMoveGestureListener {
 
+        private boolean shouldUpdateOnEnd = false;
+        private boolean isInProgress = false;
+
         boolean shouldStartMove() {
-            return mSelectedEntity == null || (mSelectedEntity instanceof MeasureToolEntity && mSelectedEntity.getDrawingStep() == MotionEntity.DEFAULT_DRAWING_STEP);
+            return mSelectedEntity == null || mSelectedEntity instanceof MeasureToolEntity;
         }
 
         @Override
         public boolean onMoveBegin(MoveGestureDetector detector) {
+            shouldUpdateOnEnd = false;
             MotionEvent startEvent = detector.getPrevEvent();
-            if (shouldStartMove() && startEvent != null) {
+            if (shouldStartMove() && startEvent != null && measurementEntity == null) {
                 // Try to select shape on the start of the move
                 updateSelectionOnTap(startEvent.getX(), startEvent.getY());
+            } else {
+                if (measurementEntity != null) {
+                    // move selected point
+                    if (measurementEntity.pointInLayerRect(new PointF(startEvent.getX(), startEvent.getY()))) {
+                        return true;
+                    } else {
+                        if (measurementEntity.getDrawingStep() < 2) {
+                            shouldUpdateOnEnd = true;
+                            isInProgress = measurementEntity.addPoint(startEvent.getX(), startEvent.getY());
+                            return true;
+                        }
+                    }
+                }
+                return measurementEntity == null;
             }
             return true;
         }
@@ -1344,6 +1362,21 @@ public class ImageEditor extends View {
         public void onMoveEnd(MoveGestureDetector detector) {
             // Left item selected
             super.onMoveEnd(detector);
+            if (mSelectedEntity instanceof MeasureToolEntity) {
+                ((MeasureToolEntity) mSelectedEntity).setFocused(false);
+            }
+            if (shouldUpdateOnEnd) {
+                if (isInProgress) {
+                    invalidateCanvas(true);
+                    onDrawingStateChanged();
+                } else {
+                    // Select measurement tool to have possibility to continue drawing
+                    onDrawingStateChanged();
+                    clearCurrentShape();
+                }
+            }
+            shouldUpdateOnEnd = false;
+            isInProgress = false;
         }
     }
 }

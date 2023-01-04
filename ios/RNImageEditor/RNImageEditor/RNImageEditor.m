@@ -37,6 +37,9 @@
     NSArray *_arrTextOnSketch, *_arrSketchOnText;
     int measuredHeight;
     int measuredWidth;
+
+    Boolean _isMeasurementInProgress;
+    Boolean _shouldHandleEndMove;
 }
 
 - (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher
@@ -73,11 +76,16 @@
 
         self.scaleGesture = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(handleScale:)];
         self.scaleGesture.delegate = self;
+        
+        self.longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+        self.longPressGesture.delegate = self;
+        self.longPressGesture.numberOfTapsRequired = 1;
 
         [self addGestureRecognizer:self.tapGesture];
         [self addGestureRecognizer:self.rotateGesture];
         [self addGestureRecognizer:self.moveGesture];
         [self addGestureRecognizer:self.scaleGesture];
+        [self addGestureRecognizer:self.longPressGesture];
 
     }
     return self;
@@ -156,7 +164,6 @@
             if ([entity class] == [MeasurementEntity class]){
                 CGRect entityRect = CGRectMake(0, 0, rect.size.width, rect.size.height);
                 CGImageRef imgRef = CGBitmapContextCreateImage(context);
-                [((MeasurementEntity *)entity) setBackground:imgRef];
                 [((MeasurementEntity *)entity) setBackground:imgRef];
             }
         }
@@ -1045,22 +1052,33 @@
     }
 }
 
+- (void)handleFinishMeasurement {
+    // call before clear to notify RN about finished shape
+    [self onDrawingStateChanged];
+    _measurementEntity = nil;
+    [self unselectShape];
+    [self onShapeSelectionChanged:nil];
+    [self onDrawingStateChanged];
+}
+
 #pragma mark - UIGestureRecognizers
 - (void)handleTap:(UITapGestureRecognizer *)sender {
     if (sender.state == UIGestureRecognizerStateEnded) {
         CGPoint tapLocation = [sender locationInView:sender.view];
         if (_measurementEntity != nil) {
-            bool inProgress = [_measurementEntity addPoint:tapLocation];
-            [_measurementEntity setNeedsDisplay];
-            if (!inProgress) {
-                // call before clear to notify RN about finished shape
-                [self onDrawingStateChanged];
-                _measurementEntity = nil;
-                [self unselectShape];
-                [self onShapeSelectionChanged:nil];
-                [self onDrawingStateChanged];
+            bool isSelectedPoint = [_measurementEntity isPointInEntity:tapLocation];
+            if (!isSelectedPoint) {
+                int prevStep = [_measurementEntity getDrawingStep];
+                bool inProgress = [_measurementEntity addPoint:tapLocation];
+                [_measurementEntity setLocalFocused:false];
+                [_measurementEntity setNeedsDisplay];
+                if (prevStep != [_measurementEntity getDrawingStep]) {
+                    if (!inProgress) {
+                        [self handleFinishMeasurement];
+                    }
+                    [self onDrawingStateChanged];
+                }
             }
-            [self onDrawingStateChanged];
         } else {
             [self updateSelectionOnTapWithLocationPoint:tapLocation];
         }
@@ -1079,21 +1097,48 @@
 }
 
 -(BOOL)shouldStartMove {
-    return self.selectedEntity == nil || ([self.selectedEntity class] == [MeasurementEntity class] && self.selectedEntity.getDrawingStep == -1);
+    return self.selectedEntity == nil || [self.selectedEntity class] == [MeasurementEntity class];
 }
 
 - (void)handleMove:(UIPanGestureRecognizer *)sender {
     UIGestureRecognizerState state = [sender state];
-    if (state == UIGestureRecognizerStateBegan && [self shouldStartMove]) {
-        // select shape
+    if (state == UIGestureRecognizerStateBegan) {
+        _isMeasurementInProgress = false;
+        _shouldHandleEndMove = false;
         CGPoint tapLocation = [sender locationInView:sender.view];
-        [self updateSelectionOnTapWithLocationPoint:tapLocation];
+        if ([self shouldStartMove] && self.measurementEntity == nil) {
+            // select shape
+            [self updateSelectionOnTapWithLocationPoint:tapLocation];
+        } else {
+            if (self.measurementEntity != nil && ![self.measurementEntity isPointInEntity:tapLocation] && [self.measurementEntity getDrawingStep] < 2) {
+                // add new point
+                _isMeasurementInProgress = [_measurementEntity addPoint:tapLocation];
+                _shouldHandleEndMove = true;
+                // Update UI
+                [self.measurementEntity setNeedsDisplay];
+            }
+        }
     }
-    if (self.selectedEntity && _measurementEntity == nil) {
+
+    if (self.selectedEntity) {
         if (state != UIGestureRecognizerStateCancelled) {
             [self.selectedEntity moveEntityTo:[sender translationInView:self.selectedEntity]];
             [sender setTranslation:CGPointZero inView:sender.view];
             [self setNeedsDisplayInRect:self.selectedEntity.bounds];
+        }
+
+        if (state == UIGestureRecognizerStateCancelled || state == UIGestureRecognizerStateEnded) {
+            if ([self.selectedEntity class] == [MeasurementEntity class]) {
+                [((MeasurementEntity *)self.selectedEntity) setLocalFocused:false];
+            }
+            if (_shouldHandleEndMove) {
+                if (!_isMeasurementInProgress) {
+                    [self handleFinishMeasurement];
+                }
+                [self onDrawingStateChanged];
+            }
+            _isMeasurementInProgress = false;
+            _shouldHandleEndMove = false;
         }
     }
 }
