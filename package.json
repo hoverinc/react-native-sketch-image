@@ -22,5 +22,6 @@
     "license": "MIT",
     "dependencies": {
         "deprecated-react-native-prop-types": "^2.3.0"
-    }
+    },
+    "packageManager": "yarn@3.2.3"
 }
