@@ -6,6 +6,7 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
 
   const endpointSource = Image.resolveAssetSource(require('./assets/endpoint.png'));
 
+  console.log('endpointSource', endpointSource);
   return <View style={{ flex: 1, flexDirection: "row" }}>
     <View style={{ flex: 1, flexDirection: "column" }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>

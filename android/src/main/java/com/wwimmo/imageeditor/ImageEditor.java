@@ -42,6 +42,7 @@ import com.facebook.common.references.CloseableReference;
 import com.facebook.datasource.DataSource;
 import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.imagepipeline.common.ResizeOptions;
+import com.facebook.imagepipeline.core.DefaultExecutorSupplier;
 import com.facebook.imagepipeline.core.ImagePipeline;
 import com.facebook.imagepipeline.datasource.BaseBitmapDataSubscriber;
 import com.facebook.imagepipeline.image.CloseableImage;
@@ -53,6 +54,7 @@ import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
+import com.facebook.react.views.imagehelper.ImageSource;
 import com.wwimmo.imageeditor.utils.CanvasText;
 import com.wwimmo.imageeditor.utils.Utility;
 import com.wwimmo.imageeditor.utils.entities.ArrowEntity;
@@ -900,13 +902,19 @@ public class ImageEditor extends View {
         if (width > 0 && height > 0) {
             builder.setResizeOptions(new ResizeOptions(width, height));
         }
-        ImageRequest request = builder.setLowestPermittedRequestLevel(ImageRequest.RequestLevel.BITMAP_MEMORY_CACHE)
-                .build();
+        ImageRequest request = builder.build();
         DataSource<CloseableReference<CloseableImage>> dataSource = imagePipeline.fetchDecodedImage(request, mContext);
 
-        dataSource.subscribe(subscriber, UiThreadImmediateExecutorService.getInstance());
+        dataSource.subscribe(subscriber,
+                new DefaultExecutorSupplier(1).forBackgroundTasks());
         return dataSource;
     }
+
+    private Uri prepareUri(String asset) {
+        ImageSource source = new ImageSource(getContext(), asset);
+        return source.getUri();
+    }
+
 
     protected void startMeasurementToolEntity(String imageShapeAsset) {
         Layer layer = new Layer();
@@ -916,7 +924,7 @@ public class ImageEditor extends View {
             measurementEntity = new MeasureToolEntity(layer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight(), imageShapeAsset);
         }
         if (imageShapeAsset != null) {
-            getBitmap(Uri.parse(imageShapeAsset), 0, 0, new BaseBitmapDataSubscriber() {
+            getBitmap(prepareUri(imageShapeAsset), 0, 0, new BaseBitmapDataSubscriber() {
                 @Override
                 protected void onNewResultImpl(@Nullable Bitmap bitmap) {
                     if (measurementEntity != null) {
