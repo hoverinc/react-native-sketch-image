@@ -3,11 +3,13 @@ package com.wwimmo.imageeditor.utils.entities;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -37,10 +39,13 @@ public class MeasureToolEntity extends MotionEntity {
     private static final int LENS_WIDTH = 260;
     private static final int LENS_HEIGHT = 160;
     private static final int ZOOM = 2;
+    private static final float ENDPOINT_OFFSET_RATIO = 1f / 8f;
     private final int mWidth;
     private final int mHeight;
     private final List<PointF> currentPoints;
     private final TextPaint mTextPaint;
+    private final String endpointImage;
+    private final boolean hasFocusHighlight = false;
     float zoomStrokeWidth = 2;
     private int mStrokeColor;
     private Paint mPaint;
@@ -53,10 +58,14 @@ public class MeasureToolEntity extends MotionEntity {
     private Bitmap mZoomBitmap;
     private Canvas mZoomCanvas;
     private boolean focused;
+    private Bitmap endpointBitmap;
+    private RectF endpointRect;
+
 
     public MeasureToolEntity(@NonNull Layer layer,
                              @IntRange(from = 1) int canvasWidth,
-                             @IntRange(from = 1) int canvasHeight) {
+                             @IntRange(from = 1) int canvasHeight,
+                             @Nullable String endpointImage) {
         super(layer, canvasWidth, canvasHeight);
 
         this.mWidth = canvasWidth;
@@ -66,6 +75,7 @@ public class MeasureToolEntity extends MotionEntity {
         updateEntity(false);
         mTextPaint = new TextPaint();
         mTextPaint.setAntiAlias(true);
+        this.endpointImage = endpointImage;
     }
 
     private void updateEntity(boolean moveToPreviousCenter) {
@@ -111,13 +121,14 @@ public class MeasureToolEntity extends MotionEntity {
         this.mCanvas.save();
         this.mCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         float savedStrokeWidth = mPaint.getStrokeWidth();
+        boolean couldDrawEnpointImage = endpointBitmap != null && focused;
         if (currentPoints.size() > 0) {
             for (int i = 0; i < currentPoints.size(); i++) {
                 PointF pointF = currentPoints.get(i);
 
-                if (pointF == selectedPoint && focused) {
+                if (hasFocusHighlight && pointF == selectedPoint && focused) {
                     // highlight point
-                    this.mPaint.setAlpha(100);
+                    this.mPaint.setAlpha(50);
                     this.mPaint.setStyle(Paint.Style.FILL);
                     this.mCanvas.drawCircle(pointF.x, pointF.y, POINT_TOUCH_AREA, this.mPaint);
                     this.mPaint.setAlpha(255);
@@ -127,12 +138,14 @@ public class MeasureToolEntity extends MotionEntity {
                     // path between points
                     PointF prevPointF = currentPoints.get(i - 1);
                     drawConnection(prevPointF, pointF, !hasText);
-                    if (hasText) {
+                    if (hasText && !couldDrawEnpointImage) {
                         drawLineIndicator(prevPointF, pointF, OUTER_RADIUS, this.mPaint);
                     }
                 }
                 if (!hasText) {
-                    this.drawPoint(pointF, mPaint);
+                    this.drawPoint(pointF, this.mPaint);
+                } else if (couldDrawEnpointImage) {
+                    drawImageEndpoint(pointF, this.mPaint);
                 }
                 mPaint.setStrokeWidth(savedStrokeWidth);
 
@@ -346,8 +359,10 @@ public class MeasureToolEntity extends MotionEntity {
 
     private void drawConnection(PointF startPoint, PointF endPoint, boolean hasOffset) {
         if (hasOffset) {
-            PointF newEnd = getOuterRadiusPoint(endPoint, startPoint, OUTER_RADIUS_CONNECTION);
-            PointF newStart = getOuterRadiusPoint(startPoint, endPoint, OUTER_RADIUS_CONNECTION);
+
+            float radius = endpointBitmap != null ? endpointBitmap.getWidth() * ENDPOINT_OFFSET_RATIO : OUTER_RADIUS_CONNECTION;
+            PointF newEnd = getOuterRadiusPoint(endPoint, startPoint, radius);
+            PointF newStart = getOuterRadiusPoint(startPoint, endPoint, radius);
             mCanvas.drawLine(newStart.x, newStart.y, newEnd.x, newEnd.y, mPaint);
         } else {
             mCanvas.drawLine(startPoint.x, startPoint.y, endPoint.x, endPoint.y, mPaint);
@@ -440,13 +455,30 @@ public class MeasureToolEntity extends MotionEntity {
         return mCurrentText == null;
     }
 
-    private void drawPoint(PointF point, Paint paint) {
+    private void drawImageEndpoint(PointF point, Paint paint) {
+        if (endpointRect == null) {
+            endpointRect = new RectF();
+        }
         float x = point.x;
         float y = point.y;
-        this.mPaint.setStyle(Paint.Style.FILL);
-        this.mCanvas.drawCircle(x, y, INNER_RADIUS, paint);
-        this.mPaint.setStyle(Paint.Style.STROKE);
-        this.mCanvas.drawCircle(x, y, OUTER_RADIUS, paint);
+        float halfHeight = endpointBitmap.getHeight() / 2f;
+        float halfWidth = endpointBitmap.getWidth() / 2f;
+        endpointRect.set(x - halfWidth, y - halfHeight, x + halfWidth, y + halfHeight);
+        this.mCanvas.drawBitmap(endpointBitmap, null, endpointRect, paint);
+    }
+
+    private void drawPoint(PointF point, Paint paint) {
+        // draw endpoint image if present
+        if (endpointBitmap != null) {
+            drawImageEndpoint(point, paint);
+        } else {
+            float x = point.x;
+            float y = point.y;
+            this.mPaint.setStyle(Paint.Style.FILL);
+            this.mCanvas.drawCircle(x, y, INNER_RADIUS, paint);
+            this.mPaint.setStyle(Paint.Style.STROKE);
+            this.mCanvas.drawCircle(x, y, OUTER_RADIUS, paint);
+        }
     }
 
 
@@ -555,5 +587,17 @@ public class MeasureToolEntity extends MotionEntity {
 
     public void setFocused(boolean focused) {
         this.focused = focused;
+    }
+
+    public String getEndpointImage() {
+        return endpointImage;
+    }
+
+    public Bitmap getEndpointBitmap() {
+        return endpointBitmap;
+    }
+
+    public void setEndpointBitmap(Bitmap endpointBitmap) {
+        this.endpointBitmap = endpointBitmap;
     }
 }
