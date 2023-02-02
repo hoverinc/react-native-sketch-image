@@ -15,11 +15,15 @@
 #import "entities/TextEntity.h"
 #import "entities/RulerEntity.h"
 #import "entities/MeasurementEntity.h"
+#import <React/RCTImageSource.h>
+#import <React/RCTImageLoader.h>
+#import <React/RCTBridge.h>
 
 @implementation RNImageEditor
 {
     NSMutableArray *_allShapes;
     RCTEventDispatcher *_eventDispatcher;
+    RCTBridge *_bridge;
     NSMutableArray *_paths;
     RNImageEditorData *_currentPath;
 
@@ -42,10 +46,11 @@
     Boolean _shouldHandleEndMove;
 }
 
-- (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher
+- (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher withBridge:(RCTBridge *)bridge
 {
     self = [super init];
     if (self) {
+        _bridge = bridge;
         _eventDispatcher = eventDispatcher;
         _paths = [NSMutableArray new];
         _allShapes = [NSMutableArray new];
@@ -76,7 +81,7 @@
 
         self.scaleGesture = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(handleScale:)];
         self.scaleGesture.delegate = self;
-        
+
         self.longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
         self.longPressGesture.delegate = self;
         self.longPressGesture.numberOfTapsRequired = 1;
@@ -746,7 +751,7 @@
             [self addRulerEntity];
             break;
         case 8:
-            [self addMeasurementEntity];
+            [self addMeasurementEntity:imageShapeAsset];
             break;
         case 0:
         case NSNotFound:
@@ -867,7 +872,43 @@
     [self onAddShape:entity];
 }
 
-- (void)addMeasurementEntity {
+
+- (void)handleLoadImage: (RCTImageSource *)imageShapeAsset {
+    if (imageShapeAsset != nil){
+        RCTImageLoader *loader = (RCTImageLoader*)[_bridge moduleForClass:[RCTImageLoader class]];
+
+        [loader loadImageWithURLRequest:imageShapeAsset.request
+                                   size:imageShapeAsset.size
+                                  scale:1
+                                clipped:YES
+                             resizeMode:RCTResizeModeStretch
+                          progressBlock:nil
+                       partialLoadBlock:nil
+                        completionBlock:^(NSError *error, id imageOrData) {
+            UIImage *loadedImage;
+            if ([imageOrData isKindOfClass:[NSData class]]) {
+                loadedImage = [UIImage imageWithData:imageOrData];
+            } else {
+                loadedImage = imageOrData;
+            }
+
+            if (_measurementEntity != nil) {
+                [_measurementEntity setEndpoinImage:loadedImage];
+                [_measurementEntity setNeedsDisplay];
+            }
+        }];
+
+    }else {
+        if (_measurementEntity != nil) {
+            [_measurementEntity setEndpoinImage:nil];
+        }
+    }
+
+}
+
+
+- (void)addMeasurementEntity: (RCTImageSource *)imageShapeAsset {
+
     CGFloat centerX = CGRectGetMidX(self.bounds);
     CGFloat centerY = CGRectGetMidY(self.bounds);
 
@@ -885,6 +926,7 @@
                               entityStrokeColor:self.entityStrokeColor];
 
     _measurementEntity = entity;
+    [self handleLoadImage:imageShapeAsset];
     [self onAddShape:entity];
 }
 

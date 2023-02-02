@@ -2,8 +2,11 @@
 #import "entities/base/Enumerations.h"
 #import "entities/base/MotionEntity.h"
 #import "entities/MeasurementEntity.h"
+#import <React/RCTImageSource.h>
 
 @class RCTEventDispatcher;
+@class RCTBridge;
+@class RCTImageSource;
 
 @interface RNImageEditor : UIView <UIGestureRecognizerDelegate>
 
@@ -22,7 +25,7 @@
 @property (nonatomic) UIPinchGestureRecognizer *scaleGesture;
 @property (nonatomic) UILongPressGestureRecognizer *longPressGesture;
 
-- (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher;
+- (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher withBridge:(RCTBridge *)bridge;
 
 - (BOOL)openSketchFile:(NSString *)filename directory:(NSString*) directory contentMode:(NSString*)mode;
 - (void)setCanvasText:(NSArray *)text;
@@ -35,7 +38,7 @@
 - (void)saveImageOfType:(NSString*) type folder:(NSString*) folder filename:(NSString*) filename withTransparentBackground:(BOOL) transparent includeImage:(BOOL)includeImage includeText:(BOOL)includeText cropToImageSize:(BOOL)cropToImageSize;
 - (NSString*) transferToBase64OfType: (NSString*) type withTransparentBackground: (BOOL) transparent includeImage:(BOOL)includeImage includeText:(BOOL)includeText cropToImageSize:(BOOL)cropToImageSize;
 - (void)setShapeConfiguration:(NSDictionary *)dict;
-- (void)addEntity:(NSString *)entityType textShapeFontType: (NSString *)textShapeFontType textShapeFontSize: (NSNumber *)textShapeFontSize textShapeText: (NSString *)textShapeText imageShapeAsset: (NSString *)imageShapeAsset;
+- (void)addEntity:(NSString *)entityType textShapeFontType: (NSString *)textShapeFontType textShapeFontSize: (NSNumber *)textShapeFontSize textShapeText: (NSString *)textShapeText imageShapeAsset: (RCTImageSource *)imageShapeAsset;
 - (void)releaseSelectedEntity;
 - (void)unselectShape;
 - (void)increaseTextEntityFontSize;
