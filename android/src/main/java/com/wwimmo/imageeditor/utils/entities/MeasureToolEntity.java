@@ -121,7 +121,7 @@ public class MeasureToolEntity extends MotionEntity {
         this.mCanvas.save();
         this.mCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         float savedStrokeWidth = mPaint.getStrokeWidth();
-        boolean couldDrawEnpointImage = endpointBitmap != null && focused;
+        boolean couldDrawEndpointImage = endpointBitmap != null && focused;
         if (currentPoints.size() > 0) {
             for (int i = 0; i < currentPoints.size(); i++) {
                 PointF pointF = currentPoints.get(i);
@@ -138,13 +138,13 @@ public class MeasureToolEntity extends MotionEntity {
                     // path between points
                     PointF prevPointF = currentPoints.get(i - 1);
                     drawConnection(prevPointF, pointF, !hasText);
-                    if (hasText && !couldDrawEnpointImage) {
+                    if (hasText && !couldDrawEndpointImage) {
                         drawLineIndicator(prevPointF, pointF, OUTER_RADIUS, this.mPaint);
                     }
                 }
                 if (!hasText) {
                     this.drawPoint(pointF, this.mPaint);
-                } else if (couldDrawEnpointImage) {
+                } else if (couldDrawEndpointImage) {
                     drawImageEndpoint(pointF, this.mPaint);
                 }
                 mPaint.setStrokeWidth(savedStrokeWidth);
@@ -219,11 +219,8 @@ public class MeasureToolEntity extends MotionEntity {
         float centerX = drawingRect.centerX();
         float centerY = drawingRect.centerY();
 
-        this.mPaint.setStyle(Paint.Style.FILL);
-        this.mCanvas.drawCircle(centerX, centerY, zoomStrokeWidth, this.mPaint);
         this.mPaint.setStyle(Paint.Style.STROKE);
         this.mPaint.setStrokeWidth(zoomStrokeWidth);
-        this.mCanvas.drawCircle(centerX, centerY, OUTER_RADIUS, this.mPaint);
 
         int lineSize = OUTER_RADIUS / 3;
         // top to center
