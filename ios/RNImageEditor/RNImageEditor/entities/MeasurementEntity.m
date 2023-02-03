@@ -130,14 +130,9 @@ int aimEdge;
                 if (i == 1 && [self text] != nil) {
                     [self drawText:contextRef];
                 }
-                if (hasText && !self.localFocused) {
-                    [self drawLineIndicator:prevPoint withEndPoint:p withSize:pointSize/2 withContext:contextRef];
-                }
             }
             // draw actual point
-            if (!hasText || self.localFocused) {
-                [self drawPoint:contextRef withPoint:p];
-            }
+            [self drawPoint:contextRef withPoint:p];
         }
         if (selectedPosition != DEFAULT_SELECTED_POSITION && background != nil && self.localFocused) {
             NSValue *val = [points objectAtIndex:selectedPosition];

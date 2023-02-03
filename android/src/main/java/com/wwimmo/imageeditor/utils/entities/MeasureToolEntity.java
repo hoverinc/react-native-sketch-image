@@ -121,7 +121,7 @@ public class MeasureToolEntity extends MotionEntity {
         this.mCanvas.save();
         this.mCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         float savedStrokeWidth = mPaint.getStrokeWidth();
-        boolean couldDrawEndpointImage = endpointBitmap != null && focused;
+
         if (currentPoints.size() > 0) {
             for (int i = 0; i < currentPoints.size(); i++) {
                 PointF pointF = currentPoints.get(i);
@@ -133,20 +133,15 @@ public class MeasureToolEntity extends MotionEntity {
                     this.mCanvas.drawCircle(pointF.x, pointF.y, POINT_TOUCH_AREA, this.mPaint);
                     this.mPaint.setAlpha(255);
                 }
-                boolean hasText = mCurrentText != null;
+
                 if (i > 0) {
                     // path between points
                     PointF prevPointF = currentPoints.get(i - 1);
-                    drawConnection(prevPointF, pointF, !hasText);
-                    if (hasText && !couldDrawEndpointImage) {
-                        drawLineIndicator(prevPointF, pointF, OUTER_RADIUS, this.mPaint);
-                    }
+                    drawConnection(prevPointF, pointF, true);
                 }
-                if (!hasText) {
-                    this.drawPoint(pointF, this.mPaint);
-                } else if (couldDrawEndpointImage) {
-                    drawImageEndpoint(pointF, this.mPaint);
-                }
+
+                this.drawPoint(pointF, this.mPaint);
+
                 mPaint.setStrokeWidth(savedStrokeWidth);
 
                 if (i == 1 && mCurrentText != null) {
