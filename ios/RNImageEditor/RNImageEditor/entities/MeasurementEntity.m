@@ -350,8 +350,8 @@ int aimEdge;
         imageRef = endpoinImage.CGImage;
     }
 
-    if (imageRef != nil && CGImageGetWidth(imageRef) > 0) {
-        CGFloat width = CGImageGetWidth(imageRef);
+    if (imageRef != nil && endpoinImage.size.width > 0) {
+        CGFloat width = endpoinImage.size.width;
         CGRect endpointRect = [self buildRect:point withSize:width];
         CGContextDrawImage(contextRef,endpointRect, imageRef);
     } else {
