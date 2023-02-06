@@ -12,7 +12,7 @@
 {
     NSMutableArray *points;
     CGImageRef background;
-    UIImage* endpoinImage;
+    UIImage* endpointImage;
 }
 
 float ENDPOINT_OFFSET_RATIO = 0.125;
@@ -70,11 +70,19 @@ int aimEdge;
     return self;
 }
 
+- (float)getTouchRadius {
+    if (endpointImage != nil && endpointImage.size.width > 0) {
+        return endpointImage.size.width;
+    }
+    return touchPointSize;
+}
+
 - (BOOL)isCurrentPointsInRect:(CGRect)rect {
+    float touchArea = [self getTouchRadius];
     for (int i=0; i < [points count]; i++) {
         NSValue *val = [points objectAtIndex:i];
         CGPoint p = [val CGPointValue];
-        if (CGRectIntersectsRect(rect, [self buildRect:p withSize:touchPointSize])) {
+        if (CGRectIntersectsRect(rect, [self buildRect:p withSize:touchArea])) {
             return true;
         }
     }
@@ -111,7 +119,8 @@ int aimEdge;
             CGPoint p = [val CGPointValue];
             // draw highlight
             if (hasFocusHighlight && selectedPosition == i && self.localFocused) {
-                CGRect highlightCircleRect = [self buildRect:p withSize:touchPointSize];
+                float touchArea = [self getTouchRadius];
+                CGRect highlightCircleRect = [self buildRect:p withSize:touchArea];
                 CGContextSetAlpha(contextRef, 0.5);
                 CGContextSetFillColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
                 CGContextFillEllipseInRect(contextRef, highlightCircleRect);
@@ -217,10 +226,11 @@ int aimEdge;
 
 - (BOOL)isPointInEntity:(CGPoint)point {
     selectedPosition = DEFAULT_SELECTED_POSITION;
+    float touchArea = [self getTouchRadius];
     for (int i=0; i < [points count]; i++) {
         NSValue *val = [points objectAtIndex:i];
         CGPoint p = [val CGPointValue];
-        CGRect pointRect = [self buildRect:p withSize:touchPointSize];
+        CGRect pointRect = [self buildRect:p withSize:touchArea];
         if (CGRectContainsPoint(pointRect, point)) {
             selectedPosition = i;
             [self setLocalFocused:true];
@@ -320,8 +330,8 @@ int aimEdge;
     CGContextBeginPath(contextRef);
     if (hasOffset) {
         float radius = 10;
-        if (endpoinImage != nil && endpoinImage.size.width > 0) {
-            float imageOffsetRadius = endpoinImage.size.width * ENDPOINT_OFFSET_RATIO;
+        if (endpointImage != nil && endpointImage.size.width > 0) {
+            float imageOffsetRadius = endpointImage.size.width * ENDPOINT_OFFSET_RATIO;
             if (imageOffsetRadius > 0) {
                 radius = imageOffsetRadius;
             }
@@ -341,12 +351,12 @@ int aimEdge;
 
 - (void)drawPoint:(CGContextRef)contextRef withPoint:(CGPoint)point {
     CGImageRef imageRef = nil;
-    if (endpoinImage != nil) {
-        imageRef = endpoinImage.CGImage;
+    if (endpointImage != nil) {
+        imageRef = endpointImage.CGImage;
     }
 
-    if (imageRef != nil && endpoinImage.size.width > 0) {
-        CGFloat width = endpoinImage.size.width;
+    if (imageRef != nil && endpointImage.size.width > 0) {
+        CGFloat width = endpointImage.size.width;
         CGRect endpointRect = [self buildRect:point withSize:width];
         CGContextDrawImage(contextRef,endpointRect, imageRef);
     } else {
@@ -488,8 +498,8 @@ int aimEdge;
     }
 }
 
-- (void)setEndpoinImage:(UIImage *)image {
-    endpoinImage = image;
+- (void)setEndpointImage:(UIImage *)image {
+    endpointImage = image;
 }
 
 @end

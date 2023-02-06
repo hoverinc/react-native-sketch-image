@@ -31,7 +31,6 @@ public class MeasureToolEntity extends MotionEntity {
     private static final int BORDER_PADDING = 16;
     private static final int POINTS_COUNT = 2;
     private static final int POINT_TOUCH_AREA = 100;
-    private static final int HALF_POINT_TOUCH_AREA = POINT_TOUCH_AREA / 2;
     private static final int INNER_RADIUS = 14;
     private static final int OUTER_RADIUS = 22;
     private static final int OUTER_RADIUS_CONNECTION = OUTER_RADIUS - 1;
@@ -130,7 +129,8 @@ public class MeasureToolEntity extends MotionEntity {
                     // highlight point
                     this.mPaint.setAlpha(50);
                     this.mPaint.setStyle(Paint.Style.FILL);
-                    this.mCanvas.drawCircle(pointF.x, pointF.y, POINT_TOUCH_AREA, this.mPaint);
+                    float touchArea = getTouchRadius();
+                    this.mCanvas.drawCircle(pointF.x, pointF.y, touchArea, this.mPaint);
                     this.mPaint.setAlpha(255);
                 }
 
@@ -265,13 +265,14 @@ public class MeasureToolEntity extends MotionEntity {
 
 
     private boolean isCurrentPointsInRect(RectF rect) {
+        float touchArea = getTouchRadius();
         for (int i = 0; i < currentPoints.size(); i++) {
             PointF currentPoint = currentPoints.get(i);
             if (rect.intersect(
-                    currentPoint.x - HALF_POINT_TOUCH_AREA,
-                    currentPoint.y - HALF_POINT_TOUCH_AREA,
-                    currentPoint.x + HALF_POINT_TOUCH_AREA,
-                    currentPoint.y + HALF_POINT_TOUCH_AREA)) {
+                    currentPoint.x - touchArea,
+                    currentPoint.y - touchArea,
+                    currentPoint.x + touchArea,
+                    currentPoint.y + touchArea)) {
                 return true;
             }
         }
@@ -483,15 +484,19 @@ public class MeasureToolEntity extends MotionEntity {
 
     private PointF getSelectedPointInArea(PointF point) {
         PointF selected = null;
+        float touchArea = getTouchRadius();
         for (int i = 0; i < currentPoints.size(); i++) {
             PointF originPoint = currentPoints.get(i);
-            if (isInCircle(originPoint.x, originPoint.y, POINT_TOUCH_AREA, point.x, point.y)) {
+            if (isInCircle(originPoint.x, originPoint.y, touchArea, point.x, point.y)) {
                 selected = originPoint;
             }
         }
         return selected;
     }
 
+    float getTouchRadius() {
+        return endpointBitmap != null && endpointBitmap.getWidth() > 0 ? endpointBitmap.getWidth() / 2f :  POINT_TOUCH_AREA;
+    }
 
     public boolean handleTranslate(PointF delta) {
         if (selectedPoint != null) {
