@@ -893,14 +893,14 @@
             }
 
             if (_measurementEntity != nil) {
-                [_measurementEntity setEndpoinImage:loadedImage];
+                [_measurementEntity setEndpointImage:loadedImage];
                 [_measurementEntity setNeedsDisplay];
             }
         }];
 
     }else {
         if (_measurementEntity != nil) {
-            [_measurementEntity setEndpoinImage:nil];
+            [_measurementEntity setEndpointImage:nil];
         }
     }
 
