@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ViewProperties, StyleProp, ViewStyle } from "react-native";
+import { ViewProperties, StyleProp, ViewStyle, ImageResolvedAssetSource } from "react-native";
 import PropTypes from "prop-types";
 
 type ImageType = "png" | "jpg";
@@ -78,7 +78,7 @@ export interface AddShapeConfig {
     textShapeFontType?: string;
     textShapeFontSize?: number;
     textShapeText?: string;
-    imageShapeAsset?: string;
+    imageShapeAsset?: string | ImageResolvedAssetSource;
 }
 
 export interface ImageEditorProps {

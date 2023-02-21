@@ -1,9 +1,12 @@
 import React from "react";
-import { Alert, Platform, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Platform, Text, TouchableOpacity, View, Image } from "react-native";
 import { ImageEditor } from "@hoverinc/react-native-sketch-canvas";
 
-
 export const CanvasOnly = ({ styles, state, canvas, setState }) => {
+
+  const endpointSource = Image.resolveAssetSource(require('./assets/endpoint.png'));
+
+  console.log('endpointSource', endpointSource);
   return <View style={{ flex: 1, flexDirection: "row" }}>
     <View style={{ flex: 1, flexDirection: "column" }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
@@ -12,9 +15,10 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
         }}>
           <Text style={{ color: "white" }}>Close</Text>
         </TouchableOpacity>
+        <Image style={{ height: 50, resizeMode : 'contain'}} source={require('./assets/endpoint.png')}/>
         <View style={{ flexDirection: "row" }}>
           <TouchableOpacity style={styles.functionButton} onPress={() => {
-            canvas.current.addShape({ shapeType: "MeasurementTool" });
+            canvas.current.addShape({ shapeType: "MeasurementTool", imageShapeAsset : endpointSource.uri  });
           }}>
             <Text style={{ color: "white" }}>Tool</Text>
           </TouchableOpacity>
@@ -36,10 +40,11 @@ export const CanvasOnly = ({ styles, state, canvas, setState }) => {
         </View>
       </View>
       <ImageEditor
-        localSourceImage={{ filename: "whale.png", directory: ImageEditor.MAIN_BUNDLE, mode: "AspectFit" }}
-        // localSourceImage={{ filename: 'bulb.png', directory: RNImageEditor.MAIN_BUNDLE }}
+        localSourceImage={{ filename: "house.png", directory: ImageEditor.MAIN_BUNDLE,  }}
         ref={canvas}
-        style={{ flex: 1 }}
+        style={{
+          flex : 1
+        }}
         strokeColor={state.color}
         strokeWidth={state.thickness}
         onStrokeStart={(x, y) => {

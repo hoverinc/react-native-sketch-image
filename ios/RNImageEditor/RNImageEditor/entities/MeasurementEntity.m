@@ -12,8 +12,11 @@
 {
     NSMutableArray *points;
     CGImageRef background;
+    UIImage* endpointImage;
 }
 
+float ENDPOINT_OFFSET_RATIO = 0.125;
+bool hasFocusHighlight = false;
 int MAX_POINTS_COUNT = 2;
 int DEFAULT_SELECTED_POSITION = -1;
 int TEXT_PADDING = 12;
@@ -67,11 +70,19 @@ int aimEdge;
     return self;
 }
 
+- (float)getTouchRadius {
+    if (endpointImage != nil && endpointImage.size.width > 0) {
+        return endpointImage.size.width;
+    }
+    return touchPointSize;
+}
+
 - (BOOL)isCurrentPointsInRect:(CGRect)rect {
+    float touchArea = [self getTouchRadius];
     for (int i=0; i < [points count]; i++) {
         NSValue *val = [points objectAtIndex:i];
         CGPoint p = [val CGPointValue];
-        if (CGRectIntersectsRect(rect, [self buildRect:p withSize:touchPointSize])) {
+        if (CGRectIntersectsRect(rect, [self buildRect:p withSize:touchArea])) {
             return true;
         }
     }
@@ -107,8 +118,9 @@ int aimEdge;
             NSValue *val = [points objectAtIndex:i];
             CGPoint p = [val CGPointValue];
             // draw highlight
-            if (selectedPosition == i && self.localFocused) {
-                CGRect highlightCircleRect = [self buildRect:p withSize:touchPointSize];
+            if (hasFocusHighlight && selectedPosition == i && self.localFocused) {
+                float touchArea = [self getTouchRadius];
+                CGRect highlightCircleRect = [self buildRect:p withSize:touchArea];
                 CGContextSetAlpha(contextRef, 0.5);
                 CGContextSetFillColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
                 CGContextFillEllipseInRect(contextRef, highlightCircleRect);
@@ -127,14 +139,9 @@ int aimEdge;
                 if (i == 1 && [self text] != nil) {
                     [self drawText:contextRef];
                 }
-                if (hasText) {
-                    [self drawLineIndicator:prevPoint withEndPoint:p withSize:pointSize/2 withContext:contextRef];
-                }
             }
             // draw actual point
-            if (!hasText){
-                [self drawPoint:contextRef withPoint:p];
-            }
+            [self drawPoint:contextRef withPoint:p];
         }
         if (selectedPosition != DEFAULT_SELECTED_POSITION && background != nil && self.localFocused) {
             NSValue *val = [points objectAtIndex:selectedPosition];
@@ -182,8 +189,6 @@ int aimEdge;
 
 
     CGRect aimRect = CGRectMake(centerX - halfAimSize, centerY - halfAimSize, aimSize, aimSize);
-    CGContextStrokeEllipseInRect(contextRef, aimRect);
-    CGContextFillEllipseInRect(contextRef, CGRectMake(centerX - 1,centerY - 1, 2, 2));
     CGContextBeginPath(contextRef);
     // Top to center
     CGContextMoveToPoint(contextRef, centerX, aimRect.origin.y);
@@ -221,17 +226,18 @@ int aimEdge;
 
 - (BOOL)isPointInEntity:(CGPoint)point {
     selectedPosition = DEFAULT_SELECTED_POSITION;
+    float touchArea = [self getTouchRadius];
     for (int i=0; i < [points count]; i++) {
         NSValue *val = [points objectAtIndex:i];
         CGPoint p = [val CGPointValue];
-        CGRect pointRect = [self buildRect:p withSize:touchPointSize];
+        CGRect pointRect = [self buildRect:p withSize:touchArea];
         if (CGRectContainsPoint(pointRect, point)) {
             selectedPosition = i;
             [self setLocalFocused:true];
             return true;
         }
     }
-    
+
     [self setLocalFocused:false];
     return false;
 }
@@ -323,8 +329,15 @@ int aimEdge;
     CGContextSetLineWidth(contextRef, 2);
     CGContextBeginPath(contextRef);
     if (hasOffset) {
-        CGPoint newStart = [self getOuterRadiusPoint:startPoint withEndPoint:endPoint withRadius:10];
-        CGPoint newEnd = [self getOuterRadiusPoint:endPoint withEndPoint:startPoint withRadius:10];
+        float radius = 10;
+        if (endpointImage != nil && endpointImage.size.width > 0) {
+            float imageOffsetRadius = endpointImage.size.width * ENDPOINT_OFFSET_RATIO;
+            if (imageOffsetRadius > 0) {
+                radius = imageOffsetRadius;
+            }
+        }
+        CGPoint newStart = [self getOuterRadiusPoint:startPoint withEndPoint:endPoint withRadius:radius];
+        CGPoint newEnd = [self getOuterRadiusPoint:endPoint withEndPoint:startPoint withRadius:radius];
 
         CGContextMoveToPoint(contextRef, newStart.x, newStart.y);
         CGContextAddLineToPoint(contextRef, newEnd.x, newEnd.y);
@@ -337,18 +350,30 @@ int aimEdge;
 }
 
 - (void)drawPoint:(CGContextRef)contextRef withPoint:(CGPoint)point {
-    CGContextSetAlpha(contextRef, 1);
-    CGRect circleRect = [self buildRect:point withSize:pointSize];
-    CGContextSetLineWidth(contextRef, 2);
-    circleRect = CGRectInset(circleRect, 2 , 2);
-    CGContextSetLineWidth(contextRef, 2);
-    CGContextSetStrokeColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
-    CGContextStrokeEllipseInRect(contextRef, circleRect);
+    CGImageRef imageRef = nil;
+    if (endpointImage != nil) {
+        imageRef = endpointImage.CGImage;
+    }
 
-    circleRect = [self buildRect:point withSize:pointSize];
-    circleRect = CGRectInset(circleRect, 6 , 6);
-    CGContextSetFillColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
-    CGContextFillEllipseInRect(contextRef, circleRect);
+    if (imageRef != nil && endpointImage.size.width > 0) {
+        CGFloat width = endpointImage.size.width;
+        CGRect endpointRect = [self buildRect:point withSize:width];
+        CGContextDrawImage(contextRef,endpointRect, imageRef);
+    } else {
+        CGContextSetAlpha(contextRef, 1);
+        CGRect circleRect = [self buildRect:point withSize:pointSize];
+        CGContextSetLineWidth(contextRef, 2);
+        circleRect = CGRectInset(circleRect, 2 , 2);
+        CGContextSetLineWidth(contextRef, 2);
+        CGContextSetStrokeColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
+        CGContextStrokeEllipseInRect(contextRef, circleRect);
+
+        circleRect = [self buildRect:point withSize:pointSize];
+        circleRect = CGRectInset(circleRect, 6 , 6);
+        CGContextSetFillColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
+        CGContextFillEllipseInRect(contextRef, circleRect);
+    }
+
 }
 
 - (BOOL)undo {
@@ -471,6 +496,10 @@ int aimEdge;
         selectedPosition = DEFAULT_SELECTED_POSITION;
         background = nil;
     }
+}
+
+- (void)setEndpointImage:(UIImage *)image {
+    endpointImage = image;
 }
 
 @end

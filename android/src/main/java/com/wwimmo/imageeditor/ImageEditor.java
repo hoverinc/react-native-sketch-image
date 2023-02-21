@@ -31,16 +31,30 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.view.GestureDetectorCompat;
 import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
 
+import com.facebook.common.executors.UiThreadImmediateExecutorService;
+import com.facebook.common.references.CloseableReference;
+import com.facebook.datasource.DataSource;
+import com.facebook.drawee.backends.pipeline.Fresco;
+import com.facebook.imagepipeline.common.ResizeOptions;
+import com.facebook.imagepipeline.core.DefaultExecutorSupplier;
+import com.facebook.imagepipeline.core.ImagePipeline;
+import com.facebook.imagepipeline.datasource.BaseBitmapDataSubscriber;
+import com.facebook.imagepipeline.image.CloseableImage;
+import com.facebook.imagepipeline.request.ImageRequest;
+import com.facebook.imagepipeline.request.ImageRequestBuilder;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
+import com.facebook.react.views.imagehelper.ImageSource;
 import com.wwimmo.imageeditor.utils.CanvasText;
 import com.wwimmo.imageeditor.utils.Utility;
 import com.wwimmo.imageeditor.utils.entities.ArrowEntity;
@@ -802,7 +816,7 @@ public class ImageEditor extends View {
                 addRulerEntity();
                 break;
             case MEASUREMENT_TOOL:
-                startMeasurementToolEntity();
+                startMeasurementToolEntity(imageShapeAsset);
                 break;
             case IMAGE:
                 // TODO: Doesn't exist yet
@@ -881,12 +895,53 @@ public class ImageEditor extends View {
         invalidateCanvas(true);
     }
 
-    protected void startMeasurementToolEntity() {
+
+    public DataSource<CloseableReference<CloseableImage>> getBitmap(Uri uri, int width, int height, BaseBitmapDataSubscriber subscriber) {
+        ImagePipeline imagePipeline = Fresco.getImagePipeline();
+        ImageRequestBuilder builder = ImageRequestBuilder.newBuilderWithSource(uri);
+        if (width > 0 && height > 0) {
+            builder.setResizeOptions(new ResizeOptions(width, height));
+        }
+        ImageRequest request = builder.build();
+        DataSource<CloseableReference<CloseableImage>> dataSource = imagePipeline.fetchDecodedImage(request, mContext);
+
+        dataSource.subscribe(subscriber,
+                new DefaultExecutorSupplier(1).forBackgroundTasks());
+        return dataSource;
+    }
+
+    private Uri prepareUri(String asset) {
+        ImageSource source = new ImageSource(getContext(), asset);
+        return source.getUri();
+    }
+
+
+    protected void startMeasurementToolEntity(String imageShapeAsset) {
         Layer layer = new Layer();
         if (mDrawingCanvas.getWidth() > mSketchCanvas.getWidth() || mDrawingCanvas.getHeight() > mSketchCanvas.getHeight()) {
-            measurementEntity = new MeasureToolEntity(layer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight());
+            measurementEntity = new MeasureToolEntity(layer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight(), imageShapeAsset);
         } else {
-            measurementEntity = new MeasureToolEntity(layer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight());
+            measurementEntity = new MeasureToolEntity(layer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight(), imageShapeAsset);
+        }
+        if (imageShapeAsset != null) {
+            getBitmap(prepareUri(imageShapeAsset), 0, 0, new BaseBitmapDataSubscriber() {
+                @Override
+                protected void onNewResultImpl(@Nullable Bitmap bitmap) {
+                    if (measurementEntity != null) {
+                        if (imageShapeAsset.equals(measurementEntity.getEndpointImage())) {
+                            measurementEntity.setEndpointBitmap(bitmap);
+                        } else {
+                            measurementEntity.setEndpointBitmap(null);
+                        }
+                    }
+                }
+
+                @Override
+                protected void onFailureImpl(@NonNull DataSource<CloseableReference<CloseableImage>> dataSource) {
+                    // No cleanup required here.
+                    measurementEntity.setEndpointBitmap(null);
+                }
+            });
         }
         addEntityAndPosition(measurementEntity);
     }

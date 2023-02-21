@@ -37,5 +37,6 @@
 - (void)addText:(NSString *)text withTextSize:(NSNumber *)fontSize withFontType:(NSString *)fontType;
 - (BOOL)isTextStep;
 - (void)setBackground:(CGImageRef)imageSource;
+- (void)setEndpointImage:(UIImage *)image;
 
 @end

@@ -80,7 +80,7 @@ RCT_CUSTOM_VIEW_PROPERTY(measuredWidth, NSInteger, RNImageEditor)
 
 - (UIView *)view
 {
-    return [[RNImageEditor alloc] initWithEventDispatcher: self.bridge.eventDispatcher];
+    return [[RNImageEditor alloc] initWithEventDispatcher:self.bridge.eventDispatcher withBridge:self.bridge];
 }
 
 #pragma mark - Exported methods
@@ -169,7 +169,7 @@ RCT_EXPORT_METHOD(unselectShape:(nonnull NSNumber *)reactTag)
     }];
 }
 
-RCT_EXPORT_METHOD(addShape:(nonnull NSNumber *)reactTag shapeType:(NSString *) shapeType textShapeFontType:(NSString *) textShapeFontType textShapeFontSize:(nonnull NSNumber *) textShapeFontSize textShapeText:(NSString *) textShapeText imageShapeAsset:(NSString *)imageShapeAsset)
+RCT_EXPORT_METHOD(addShape:(nonnull NSNumber *)reactTag shapeType:(NSString *) shapeType textShapeFontType:(NSString *) textShapeFontType textShapeFontSize:(nonnull NSNumber *) textShapeFontSize textShapeText:(NSString *) textShapeText imageShapeAsset:(RCTImageSource *)imageShapeAsset)
 {
     [self runCanvas:reactTag block:^(RNImageEditor *canvas) {
         [canvas addEntity:shapeType textShapeFontType:textShapeFontType textShapeFontSize:textShapeFontSize textShapeText:textShapeText imageShapeAsset:imageShapeAsset];
