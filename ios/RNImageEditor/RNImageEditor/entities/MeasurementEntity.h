@@ -38,5 +38,6 @@
 - (BOOL)isTextStep;
 - (void)setBackground:(CGImageRef)imageSource;
 - (void)setEndpointImage:(UIImage *)image;
+- (NSMutableArray *) getPoints;
 
 @end

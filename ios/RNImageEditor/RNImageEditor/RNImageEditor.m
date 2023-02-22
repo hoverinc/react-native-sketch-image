@@ -529,6 +529,33 @@
     }
 }
 
+- (NSString*)getMeasuredPosition:(BOOL) cropToImageSize{
+    MeasurementEntity* lastEntity = nil;
+    for (MotionEntity* entity in self.motionEntities) {
+        if ([entity class] == [MeasurementEntity class]){
+            lastEntity = (MeasurementEntity *) entity;
+        }
+    }
+    if (lastEntity != nil) {
+        float scale = 1;
+        if (cropToImageSize == true) {
+            scale = _backgroundImage.size.width / self.bounds.size.width;
+        }
+        NSMutableArray* points = [lastEntity getPoints];
+        NSMutableArray* positions = [NSMutableArray new];
+        for (NSValue* value in points) {
+            CGPoint p = [value CGPointValue];
+            int x = p.x * scale;
+            int y = p.y * scale;
+            NSString* position = [NSString stringWithFormat:@"[%d, %d]",x,y];
+            [positions addObject:position];
+        }
+        NSString* result = [NSString stringWithFormat:@"[%@]",[positions componentsJoinedByString:@","]];
+        return result;
+    }
+    return nil;
+}
+
 - (void)saveImageOfType:(NSString*) type folder:(NSString*) folder filename:(NSString*) filename withTransparentBackground:(BOOL) transparent includeImage:(BOOL)includeImage includeText:(BOOL)includeText cropToImageSize:(BOOL)cropToImageSize {
     UIImage *img = [self createImageWithTransparentBackground:transparent includeImage:includeImage includeText:(BOOL)includeText cropToImageSize:cropToImageSize];
 
@@ -542,7 +569,8 @@
         if (error == nil) {
             NSURL *fileURL = [[tempDir URLByAppendingPathComponent: filename] URLByAppendingPathExtension: type];
             NSData *imageData = [self getImageData:img type:type];
-            [self saveImageWithMetadata:imageData fileURL:fileURL];
+            NSString* measurementPosition = [self getMeasuredPosition:cropToImageSize];
+            [self saveImageWithMetadata:imageData fileURL:fileURL withMeasurementPosition:measurementPosition];
 
             if (_onChange) {
                 _onChange(@{ @"success": @YES, @"path": [fileURL path]});
@@ -560,7 +588,7 @@
     }
 }
 
-- (void)saveImageWithMetadata:(NSData *)imageData fileURL:(NSURL*)fileURL
+- (void)saveImageWithMetadata:(NSData *)imageData fileURL:(NSURL*)fileURL withMeasurementPosition:(NSString*)measurementPosition
 {
     NSString *originalFileName = [[_currentFilePath lastPathComponent] stringByDeletingPathExtension];
     NSString *uniqueImageId = [self getUniqueImageId:originalFileName];
@@ -574,6 +602,11 @@
     NSMutableDictionary *mutableExifDict = [exifDict mutableCopy];
 
     [mutableExifDict setValue:uniqueImageId forKey:(NSString *)kCGImagePropertyExifImageUniqueID];
+
+    if (measurementPosition != nil) {
+        [mutableExifDict setValue:measurementPosition forKey:(NSString *)kCGImagePropertyPNGCopyright];
+    }
+
     [mutableMetadataDict setObject:mutableExifDict forKey:(NSString *)kCGImagePropertyExifDictionary];
 
     NSMutableData *destData = [NSMutableData data];

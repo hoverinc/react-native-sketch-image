@@ -502,4 +502,8 @@ int aimEdge;
     endpointImage = image;
 }
 
+- (NSMutableArray *) getPoints {
+    return points;
+}
+
 @end
