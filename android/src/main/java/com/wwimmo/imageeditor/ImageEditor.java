@@ -600,7 +600,7 @@ public class ImageEditor extends View {
             ExifInterface exif = new ExifInterface(path);
             exif.setAttribute(ExifInterface.TAG_IMAGE_UNIQUE_ID, originalFile.getName());
             if (position != null) {
-                exif.setAttribute(ExifInterface.TAG_COPYRIGHT, position);
+                exif.setAttribute(ExifInterface.TAG_USER_COMMENT, position);
             }
             exif.saveAttributes();
         } catch (Exception e) {

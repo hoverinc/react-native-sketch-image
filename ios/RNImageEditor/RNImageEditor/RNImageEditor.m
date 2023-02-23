@@ -604,7 +604,7 @@
     [mutableExifDict setValue:uniqueImageId forKey:(NSString *)kCGImagePropertyExifImageUniqueID];
 
     if (measurementPosition != nil) {
-        [mutableExifDict setValue:measurementPosition forKey:(NSString *)kCGImagePropertyPNGCopyright];
+        [mutableExifDict setValue:measurementPosition forKey:(NSString *)kCGImagePropertyExifUserComment];
     }
 
     [mutableMetadataDict setObject:mutableExifDict forKey:(NSString *)kCGImagePropertyExifDictionary];
