@@ -11,6 +11,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
@@ -80,6 +81,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -189,6 +191,29 @@ public class ImageEditor extends View {
                 format.equals("png") ? 100 : 90,
                 byteArrayOS);
         return Base64.encodeToString(byteArrayOS.toByteArray(), Base64.DEFAULT);
+    }
+
+    private String getMeasuredPosition(boolean cropToImageSize) {
+        MeasureToolEntity lastEntity = null;
+        for (int i = 0; i < mEntities.size(); i++) {
+            if (mEntities.get(i) instanceof MeasureToolEntity) {
+                lastEntity = (MeasureToolEntity) mEntities.get(i);
+            }
+        }
+        if (lastEntity != null) {
+            double scale =  mBackgroundImage != null && cropToImageSize ? (double) mOriginalBitmapWidth /  getWidth() : 1;
+            int pointsSize = lastEntity.getCurrentPoints().size();
+            int[][] positions = new int[pointsSize][];
+            for (int i = 0; i < pointsSize; i++) {
+                PointF position = lastEntity.getCurrentPoints().get(i);
+                int x = (int) (position.x * scale);
+                int y = (int) (position.y * scale);
+                positions[i] = new int[]{x, y};
+            }
+            return Arrays.deepToString(positions);
+        } else {
+            return null;
+        }
     }
 
     private Bitmap createImage(boolean transparent, boolean includeImage, boolean includeText, boolean cropToImageSize) {
@@ -547,7 +572,8 @@ public class ImageEditor extends View {
                         new FileOutputStream(createdFile));
                 String path = createdFile.getPath();
                 this.onSaved(true, path);
-                this.updateExif(path);
+
+                this.updateExif(path, this.getMeasuredPosition(cropToImageSize));
 
                 success = true;
             } catch (Exception e) {
@@ -567,12 +593,15 @@ public class ImageEditor extends View {
 
     }
 
-    public void updateExif(String path) {
+    public void updateExif(String path, String position) {
         try {
             File originalFile = new File(currentFilePath);
 
             ExifInterface exif = new ExifInterface(path);
             exif.setAttribute(ExifInterface.TAG_IMAGE_UNIQUE_ID, originalFile.getName());
+            if (position != null) {
+                exif.setAttribute(ExifInterface.TAG_USER_COMMENT, position);
+            }
             exif.saveAttributes();
         } catch (Exception e) {
             Log.e("Update exif", "Failed to update exif!");

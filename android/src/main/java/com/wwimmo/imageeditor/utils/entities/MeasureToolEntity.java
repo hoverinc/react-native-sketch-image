@@ -597,4 +597,8 @@ public class MeasureToolEntity extends MotionEntity {
     public void setEndpointBitmap(Bitmap endpointBitmap) {
         this.endpointBitmap = endpointBitmap;
     }
+
+    public List<PointF> getCurrentPoints() {
+        return currentPoints;
+    }
 }
