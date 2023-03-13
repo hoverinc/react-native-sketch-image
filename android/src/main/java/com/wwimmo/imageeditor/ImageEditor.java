@@ -279,7 +279,7 @@ public class ImageEditor extends View {
         boolean isErase = strokeColor == Color.TRANSPARENT;
         if (isErase && mDisableHardwareAccelerated == false) {
             mDisableHardwareAccelerated = true;
-            setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+            // setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         }
         invalidateCanvas(true);
     }
@@ -319,7 +319,7 @@ public class ImageEditor extends View {
             boolean isErase = strokeColor == Color.TRANSPARENT;
             if (isErase && mDisableHardwareAccelerated == false) {
                 mDisableHardwareAccelerated = true;
-                setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+                // setLayerType(View.LAYER_TYPE_SOFTWARE, null);
             }
             newPath.draw(mDrawingCanvas);
             invalidateCanvas(true);
@@ -1050,7 +1050,7 @@ public class ImageEditor extends View {
             if (mEntityBorderStyle == BorderStyle.DASHED) {
                 // Make DashPathEffect work with drawLines (drawSelectedBg in MotionEntity)
                 mDisableHardwareAccelerated = true;
-                setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+                // setLayerType(View.LAYER_TYPE_SOFTWARE, null);
             }
 
             initEntityBorder(entity);
