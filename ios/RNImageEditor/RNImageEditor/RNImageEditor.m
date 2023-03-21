@@ -550,7 +550,7 @@
             NSString* position = [NSString stringWithFormat:@"[%d, %d]",x,y];
             [positions addObject:position];
         }
-        NSString* result = [NSString stringWithFormat:@"[%@]",[positions componentsJoinedByString:@","]];
+        NSString* result = [NSString stringWithFormat:@"{rmPoints:[%@]}",[positions componentsJoinedByString:@","]];
         return result;
     }
     return nil;
@@ -604,8 +604,7 @@
     [mutableExifDict setValue:uniqueImageId forKey:(NSString *)kCGImagePropertyExifImageUniqueID];
 
     if (measurementPosition != nil) {
-     // temp hotfix
-     //   [mutableExifDict setValue:measurementPosition forKey:(NSString *)kCGImagePropertyExifUserComment];
+        [mutableExifDict setValue:measurementPosition forKey:(NSString *)kCGImagePropertyExifUserComment];
     }
 
     [mutableMetadataDict setObject:mutableExifDict forKey:(NSString *)kCGImagePropertyExifDictionary];

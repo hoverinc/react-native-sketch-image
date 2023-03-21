@@ -82,7 +82,9 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -210,7 +212,10 @@ public class ImageEditor extends View {
                 int y = (int) (position.y * scale);
                 positions[i] = new int[]{x, y};
             }
-            return Arrays.deepToString(positions);
+            Map exifPositionData = new HashMap();
+            exifPositionData.put("rmPoints", Arrays.deepToString(positions));
+            String result = exifPositionData.toString().replace("=", ":");
+            return result;
         } else {
             return null;
         }
