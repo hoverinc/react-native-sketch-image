@@ -931,11 +931,12 @@
             } else {
                 loadedImage = imageOrData;
             }
-
-            if (_measurementEntity != nil) {
-                [_measurementEntity setEndpointImage:loadedImage];
-                [_measurementEntity setNeedsDisplay];
-            }
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (_measurementEntity != nil) {
+                    [_measurementEntity setEndpointImage:loadedImage];
+                    [_measurementEntity setNeedsDisplay];
+                }
+               });
         }];
 
     }else {
