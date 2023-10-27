@@ -176,7 +176,7 @@
 
         [self addSubview:entity];
     }
-    if (_didImageChanged) {
+    if (_backgroundImage && _didImageChanged) {
         [self onDrawingStateChanged];
         _didImageChanged = NO;
     }
