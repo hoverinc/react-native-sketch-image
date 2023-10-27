@@ -550,7 +550,7 @@
             NSString* position = [NSString stringWithFormat:@"[%d, %d]",x,y];
             [positions addObject:position];
         }
-        NSString* result = [NSString stringWithFormat:@"[%@]",[positions componentsJoinedByString:@","]];
+        NSString* result = [NSString stringWithFormat:@"{rmPoints:[%@]}",[positions componentsJoinedByString:@","]];
         return result;
     }
     return nil;
