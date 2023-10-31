@@ -11,7 +11,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
@@ -38,7 +37,6 @@ import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.view.GestureDetectorCompat;
 import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
 
-import com.facebook.common.executors.UiThreadImmediateExecutorService;
 import com.facebook.common.references.CloseableReference;
 import com.facebook.datasource.DataSource;
 import com.facebook.drawee.backends.pipeline.Fresco;
@@ -152,6 +150,7 @@ public class ImageEditor extends View {
     private Canvas mSketchCanvas = null;
     private boolean mDisableHardwareAccelerated = false;
     private boolean mNeedsFullRedraw = true;
+    private boolean mIsImageChanged = false;
 
     public ImageEditor(ThemedReactContext context) {
         super(context);
@@ -440,6 +439,10 @@ public class ImageEditor extends View {
             }
             drawAllEntities(mSketchCanvas);
         }
+        if (mBackgroundImage != null && this.mIsImageChanged) {
+            this.onDrawingStateChanged();
+            this.mIsImageChanged = false;
+        }
     }
 
     private void invalidateCanvas(boolean shouldDispatchEvent) {
@@ -672,7 +675,7 @@ public class ImageEditor extends View {
                     mContext.getPackageName());
             BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
             Bitmap bitmap = null;
-
+            this.mIsImageChanged = true;
             try {
                 if (res == 0) {
                     String convertedDirectory = directory == null ? "" : directory;

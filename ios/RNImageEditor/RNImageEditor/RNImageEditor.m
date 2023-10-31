@@ -44,6 +44,7 @@
 
     Boolean _isMeasurementInProgress;
     Boolean _shouldHandleEndMove;
+    Boolean _didImageChanged;
 }
 
 - (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher withBridge:(RCTBridge *)bridge
@@ -175,6 +176,10 @@
 
         [self addSubview:entity];
     }
+    if (_backgroundImage && _didImageChanged) {
+        [self onDrawingStateChanged];
+        _didImageChanged = NO;
+    }
 }
 
 - (void)layoutSubviews {
@@ -225,7 +230,9 @@
 }
 
 - (BOOL)openSketchFile:(NSString *)filename directory:(NSString*) directory contentMode:(NSString*)mode {
+
     if (filename) {
+        _didImageChanged = YES;
         UIImage *image = [UIImage imageWithContentsOfFile: [directory stringByAppendingPathComponent: filename]];
         image = image ? image : [UIImage imageNamed: filename];
         if(image) {
@@ -924,11 +931,12 @@
             } else {
                 loadedImage = imageOrData;
             }
-
-            if (_measurementEntity != nil) {
-                [_measurementEntity setEndpointImage:loadedImage];
-                [_measurementEntity setNeedsDisplay];
-            }
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (_measurementEntity != nil) {
+                    [_measurementEntity setEndpointImage:loadedImage];
+                    [_measurementEntity setNeedsDisplay];
+                }
+               });
         }];
 
     }else {
