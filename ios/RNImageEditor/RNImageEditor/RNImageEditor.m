@@ -967,6 +967,8 @@
                               entityStrokeColor:self.entityStrokeColor];
 
     _measurementEntity = entity;
+    [_measurementEntity addPoint:CGPointMake(centerX - 50, centerY)];
+    [_measurementEntity addPoint:CGPointMake(centerX + 50, centerY)];
     [self handleLoadImage:imageShapeAsset];
     [self onAddShape:entity];
 }
@@ -1193,12 +1195,14 @@
             // select shape
             [self updateSelectionOnTapWithLocationPoint:tapLocation];
         } else {
-            if (self.measurementEntity != nil && ![self.measurementEntity isPointInEntity:tapLocation] && [self.measurementEntity getDrawingStep] < 2) {
-                // add new point
-                _isMeasurementInProgress = [_measurementEntity addPoint:tapLocation];
-                _shouldHandleEndMove = true;
-                // Update UI
-                [self.measurementEntity setNeedsDisplay];
+            if (self.measurementEntity != nil && ![self.measurementEntity isPointInEntity:tapLocation]){
+                if ( [self.measurementEntity getDrawingStep] < 2) {
+                    // add new point
+                    _isMeasurementInProgress = [_measurementEntity addPoint:tapLocation];
+                    _shouldHandleEndMove = true;
+                    // Update UI
+                    [self.measurementEntity setNeedsDisplay];
+                }
             }
         }
     }
@@ -1212,7 +1216,11 @@
 
         if (state == UIGestureRecognizerStateCancelled || state == UIGestureRecognizerStateEnded) {
             if ([self.selectedEntity class] == [MeasurementEntity class]) {
-                [((MeasurementEntity *)self.selectedEntity) setLocalFocused:false];
+                if (!_shouldHandleEndMove && [_measurementEntity isTextStep]) {
+                    [self onDrawingStateChanged];
+                } else {
+                    [((MeasurementEntity *)self.selectedEntity) setLocalFocused:false];
+                }
             }
             if (_shouldHandleEndMove) {
                 if (!_isMeasurementInProgress) {
