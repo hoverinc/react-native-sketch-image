@@ -1197,9 +1197,9 @@
         } else {
             if (self.measurementEntity != nil && ![self.measurementEntity isPointInEntity:tapLocation]){
                 if ( [self.measurementEntity getDrawingStep] < 2) {
-                    // add new point
+                    // add new point if posible, return true if added or text is not defined
                     _isMeasurementInProgress = [_measurementEntity addPoint:tapLocation];
-                    _shouldHandleEndMove = true;
+                    _shouldHandleEndMove = false;
                     // Update UI
                     [self.measurementEntity setNeedsDisplay];
                 }
@@ -1216,11 +1216,11 @@
 
         if (state == UIGestureRecognizerStateCancelled || state == UIGestureRecognizerStateEnded) {
             if ([self.selectedEntity class] == [MeasurementEntity class]) {
-                if (!_shouldHandleEndMove && [_measurementEntity isTextStep]) {
-                    [self onDrawingStateChanged];
-                } else {
-                    [((MeasurementEntity *)self.selectedEntity) setLocalFocused:false];
-                }
+                 if (!_shouldHandleEndMove && [_measurementEntity isTextStep]) {
+                     [self onDrawingStateChanged];
+                 } else {
+                     [((MeasurementEntity *)self.selectedEntity) setLocalFocused:false];
+                 }
             }
             if (_shouldHandleEndMove) {
                 if (!_isMeasurementInProgress) {

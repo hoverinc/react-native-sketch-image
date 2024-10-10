@@ -11,6 +11,7 @@
 @implementation MeasurementEntity
 {
     NSMutableArray *points;
+    NSMutableArray *pointsVisited;
     CGImageRef background;
     UIImage* endpointImage;
 }
@@ -29,6 +30,14 @@ int LENS_WIDTH = 72;
 int LENS_HEIGHT = 72;
 
 int aimSize = 4;
+
+
+// Pulsing point indicator
+CGFloat pulseScale = 1.0;
+BOOL isGrowing;
+BOOL isTimerRunning;
+NSTimer *timer;
+
 
 - (instancetype)initAndSetupWithParent: (NSInteger)parentWidth
                           parentHeight: (NSInteger)parentHeight
@@ -64,13 +73,11 @@ int aimSize = 4;
     }
 
     points = [NSMutableArray new];
+    pointsVisited = [NSMutableArray new];
     return self;
 }
 
 - (float)getTouchRadius {
-    if (endpointImage != nil && endpointImage.size.width > 0) {
-        return endpointImage.size.width;
-    }
     return touchPointSize;
 }
 
@@ -129,15 +136,10 @@ int aimSize = 4;
                 CGPoint prevPoint = [preVal CGPointValue];
                 [self drawConnection:contextRef withStartPoint:prevPoint withEndPoint:p withOffsetEnable:false];
             }
+            BOOL pointSelect = selectedPosition == i && self.localFocused;
 
             // draw highlight
-            if (selectedPosition == i && self.localFocused) {
-//                float touchArea = [self getTouchRadius];
-//                CGRect highlightCircleRect = [self buildRect:p withSize:touchArea];
-//                CGContextSetAlpha(contextRef, 0.5);
-//                CGContextSetFillColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
-//                CGContextFillEllipseInRect(contextRef, highlightCircleRect);
-//                CGContextSetAlpha(contextRef, 1);
+            if (pointSelect == TRUE) {
                 CGPoint point = p;
                 // Draw selection indicator
                 float andgeInRadians = (25 * M_PI)/ 180;
@@ -150,11 +152,19 @@ int aimSize = 4;
 
                 // Restore
                 CGContextSetLineWidth(contextRef, 2);
+            }else if ([points count] > 1) {
+                // Pulsing indicator
+                // Calculate the pulsing circle's size
+                CGFloat circleRadius = 5 + 11 * pulseScale; // Base radius 10 and changable till 32
+                CGRect circleRect = [self buildRect:p withSize:circleRadius*2];
+                // Draw the circle
+                CGContextSetFillColorWithColor(contextRef, [[self.entityStrokeColor colorWithAlphaComponent:0.5f] CGColor]);
+                CGContextFillEllipseInRect(contextRef, circleRect);
             }
 
             bool hasText = [self text] != nil;
             // draw text
-            if (i == 1 && [self text] != nil) {
+            if (i == 1 && hasText) {
                 NSValue *preVal = [points objectAtIndex:i - 1];
                 CGPoint prevPoint = [preVal CGPointValue];
                 CGPoint centerPoint = CGPointMake((prevPoint.x + p.x)/2, (prevPoint.y + p.y)/2);
@@ -168,6 +178,41 @@ int aimSize = 4;
             CGPoint p = [val CGPointValue];
             [self drawZoomLens:p withinContext:contextRef withBackground:background];
         }
+
+        // Draw indicator for not touched toints, one at a time
+        if ([pointsVisited count] > 1) {
+            bool visitedFirst = [[pointsVisited objectAtIndex:0] boolValue];
+            bool visitedSecond = [[pointsVisited objectAtIndex:1] boolValue];
+            if (!visitedSecond && selectedPosition != 1) {
+                // Highlight second
+                [self drawNotVisitedPointIndicator:contextRef withPoint:[[points objectAtIndex:1] CGPointValue]];
+            }else if (!visitedFirst  && selectedPosition != 0) {
+                // Highlight first
+                [self drawNotVisitedPointIndicator:contextRef withPoint:[[points objectAtIndex:0] CGPointValue]];
+            }
+
+        }
+    }
+}
+
+-(void)drawNotVisitedPointIndicator:(CGContextRef) contextRef withPoint:(CGPoint)point {
+    CGImageRef imageRef = nil;
+        if (endpointImage != nil) {
+            imageRef = endpointImage.CGImage;
+        }
+
+    if (imageRef != nil && endpointImage.size.width > 0) {
+        CGFloat width = endpointImage.size.width;
+        CGFloat height = endpointImage.size.height;
+
+        CGContextSaveGState(contextRef);
+        CGContextTranslateCTM(contextRef, point.x + width/2, point.y + height/2 + 20);
+        CGContextScaleCTM(contextRef, 1.0, -1.0);
+        CGRect endpointRect = CGRectMake(-width /2, -height/2, width, height);
+        CGContextDrawImage(contextRef,endpointRect, imageRef);
+        CGContextScaleCTM(contextRef, 1.0, -1.0);
+        CGContextTranslateCTM(contextRef, 0, 0);
+        CGContextRestoreGState(contextRef);
     }
 }
 
@@ -198,18 +243,23 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
     // Draw zoom lens
     CGFloat scaleX = CGImageGetWidth(background) / self.bounds.size.width;
     CGFloat scaleY = CGImageGetHeight(background) / self.bounds.size.height;
+    if (scaleX ==0 || scaleY ==0){
+        return;
+    }
     CGRect centerRect = CGRectMake((center.x - LENS_WIDTH/4) * scaleX, (center.y - LENS_HEIGHT/4 ) * scaleY, LENS_WIDTH / 2 * scaleX, LENS_HEIGHT / 2 * scaleY);
-
     CGImageRef lensImage = CGImageCreateWithImageInRect(background, centerRect);
-
 
     // Draw zoomed image
     CGPoint drawingCenter = [self getCornerPosition:LENS_WIDTH withHeight:LENS_HEIGHT];
+    CGRect entityRect = CGRectMake(-LENS_WIDTH/2 , -LENS_HEIGHT/2, LENS_WIDTH , LENS_HEIGHT);
     CGContextTranslateCTM(contextRef, drawingCenter.x, drawingCenter.y);
     CGContextScaleCTM(contextRef, 1, -1);
-    CGRect entityRect = CGRectMake(-LENS_WIDTH/2 , -LENS_HEIGHT/2, LENS_WIDTH , LENS_HEIGHT);
     drawCircularImageInContext(contextRef, lensImage, entityRect);
     CGContextScaleCTM(contextRef, 1, -1);
+    // release background image
+    CGImageRelease(background);
+    CGImageRelease(lensImage);
+
 
     centerX = 0;
     centerY = 0;
@@ -224,10 +274,6 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
     CGRect aimRect = CGRectMake(centerX - aimSize/2, centerY - aimSize/2, aimSize, aimSize);
     CGContextSetFillColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
     CGContextFillEllipseInRect(contextRef, aimRect);
-
-    // release background image
-    CGImageRelease(background);
-    CGImageRelease(lensImage);
 }
 
 - (CGRect)buildRect:(CGPoint) center withSize:(float)size {
@@ -235,11 +281,14 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
 }
 
 - (BOOL)addPoint:(CGPoint)point {
-
     if ([points count] < MAX_POINTS_COUNT) {
         [points addObject: [NSValue valueWithCGPoint:point]];
+        [pointsVisited addObject: [NSNumber numberWithBool:FALSE]];
         [self setLocalFocused:true];
-        selectedPosition = [points count] - 1;
+
+        if ([points count] > 1 && !isTimerRunning) {
+            [self startTimer];
+        }
         return [points count] < MAX_POINTS_COUNT || [self text] == nil;
     }
     return [self text] == nil;
@@ -275,6 +324,7 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
         p.x = p.x + locationDiff.x;
         p.y = p.y + locationDiff.y;
         points[selectedPosition] = [NSValue valueWithCGPoint:p];
+        pointsVisited[selectedPosition] = [NSNumber numberWithBool:TRUE];
     }
 }
 
@@ -383,29 +433,9 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
 }
 
 - (void)drawPoint:(CGContextRef)contextRef withPoint:(CGPoint)point {
-    CGImageRef imageRef = nil;
-    //    if (endpointImage != nil) {
-    //        imageRef = endpointImage.CGImage;
-    //    }
-
-    if (imageRef != nil && endpointImage.size.width > 0) {
-        CGFloat width = endpointImage.size.width;
-        CGRect endpointRect = [self buildRect:point withSize:width];
-        CGContextDrawImage(contextRef,endpointRect, imageRef);
-    } else {
-        CGContextSetAlpha(contextRef, 1);
-        CGRect circleRect = [self buildRect:point withSize:pointSize];
-        //        CGContextSetLineWidth(contextRef, 2);
-        //        circleRect = CGRectInset(circleRect, 2 , 2);
-        //        CGContextSetLineWidth(contextRef, 2);
-        //        CGContextSetStrokeColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
-        //        CGContextStrokeEllipseInRect(contextRef, circleRect);
-
-        circleRect = [self buildRect:point withSize:pointSize];
-        circleRect = CGRectInset(circleRect, 0 , 0);
-        CGContextSetFillColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
-        CGContextFillEllipseInRect(contextRef, circleRect);
-    }
+    CGContextSetAlpha(contextRef, 1);
+    CGContextSetFillColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
+    CGContextFillEllipseInRect(contextRef, [self buildRect:point withSize:pointSize]);
 }
 
 - (BOOL)undo {
@@ -415,24 +445,43 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
     }
     NSUInteger currentCount = [points count];
     if (currentCount > 0) {
-        [points removeLastObject];
+        [points removeAllObjects];
+        [pointsVisited removeAllObjects];
         // Clear selection if remove selected point
         if (selectedPosition == currentCount) {
             selectedPosition = DEFAULT_SELECTED_POSITION;
         }
-        return [points count] > 0;
+        return false;
     }
     return false;
 }
 
 
 - (NSInteger)getDrawingStep {
-    if ([points count] < MAX_POINTS_COUNT) {
-        return [points count];
+    if ([points count] < MAX_POINTS_COUNT || ![self isAllVisited]) {
+        return 1;
     }else {
         return [points count] + ([self text] != nil ? 1 : 0);
     }
     return DEFAULT_DRAWING_STEP;
+}
+
+- (BOOL)isTextStep{
+    return [self getDrawingStep] == MAX_POINTS_COUNT && [self isAllVisited];
+}
+
+- (BOOL)isAllVisited {
+    if ([pointsVisited count] < MAX_POINTS_COUNT) {
+        return FALSE;
+    }
+    BOOL all = TRUE;
+    for (int i=0; i < [pointsVisited count]; i++) {
+        NSNumber* val = [pointsVisited objectAtIndex:i];
+        if (![val boolValue]) {
+            return FALSE;
+        }
+    }
+    return all;
 }
 
 - (NSString *)getShapeType {
@@ -482,11 +531,6 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
 
 }
 
-- (BOOL)isTextStep{
-    return [self getDrawingStep] == MAX_POINTS_COUNT;
-}
-
-
 - (void)drawText:(CGContextRef)contextRef withCenterPoint: (CGPoint) centerPoint {
     self.textAttributes = @{
         NSFontAttributeName: self.font,
@@ -534,6 +578,34 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
 
 - (NSMutableArray *) getPoints {
     return points;
+}
+
+- (void)startTimer {
+    if (!isTimerRunning) {
+        // Starting timer broke the app
+        //        timer = [NSTimer scheduledTimerWithTimeInterval:0.05
+        //                                                      target:self
+        //                                                    selector:@selector(animatePulse)
+        //                                                    userInfo:nil
+        //                                                     repeats:YES];
+        isTimerRunning = YES;
+    }
+}
+
+- (void)animatePulse {
+    if (isGrowing) {
+        pulseScale += 0.02;
+        if (pulseScale >= 1.0) { // Maximum scale
+            isGrowing = NO;
+        }
+    } else {
+        pulseScale -= 0.02;
+        if (pulseScale <= 0.0) { // Minimum scale
+            isGrowing = YES;
+        }
+    }
+
+    [self setNeedsDisplay]; // Redraw the view
 }
 
 @end
