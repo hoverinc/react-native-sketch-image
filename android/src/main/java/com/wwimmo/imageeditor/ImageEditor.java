@@ -24,6 +24,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -955,10 +956,11 @@ public class ImageEditor extends View {
 
     protected void startMeasurementToolEntity(String imageShapeAsset) {
         Layer layer = new Layer();
+        DisplayMetrics dm = mContext.getResources().getDisplayMetrics();
         if (mDrawingCanvas.getWidth() > mSketchCanvas.getWidth() || mDrawingCanvas.getHeight() > mSketchCanvas.getHeight()) {
-            measurementEntity = new MeasureToolEntity(layer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight(), imageShapeAsset);
+            measurementEntity = new MeasureToolEntity(layer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight(), imageShapeAsset, dm);
         } else {
-            measurementEntity = new MeasureToolEntity(layer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight(), imageShapeAsset);
+            measurementEntity = new MeasureToolEntity(layer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight(), imageShapeAsset, dm);
         }
         if (imageShapeAsset != null) {
             getBitmap(prepareUri(imageShapeAsset), 0, 0, new BaseBitmapDataSubscriber() {
@@ -981,6 +983,8 @@ public class ImageEditor extends View {
             });
         }
         addEntityAndPosition(measurementEntity);
+        measurementEntity.addPoint(measurementEntity.getWidth() * 0.35f, measurementEntity.getHeight() /2);
+        measurementEntity.addPoint(measurementEntity.getWidth() * 0.65f, measurementEntity.getHeight() /2);
     }
 
     protected void addSquareEntity(int width) {
@@ -1455,7 +1459,12 @@ public class ImageEditor extends View {
             // Left item selected
             super.onMoveEnd(detector);
             if (mSelectedEntity instanceof MeasureToolEntity) {
-                ((MeasureToolEntity) mSelectedEntity).setFocused(false);
+                MeasureToolEntity entity = (MeasureToolEntity) mSelectedEntity;
+                if (!shouldUpdateOnEnd && entity.isTextStep()) {
+                    onDrawingStateChanged();
+                }else {
+                    ((MeasureToolEntity) mSelectedEntity).setFocused(false);
+                }
             }
             if (shouldUpdateOnEnd) {
                 if (isInProgress) {

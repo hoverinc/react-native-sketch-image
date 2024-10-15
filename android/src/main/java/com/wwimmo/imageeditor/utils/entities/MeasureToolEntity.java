@@ -3,13 +3,12 @@ package com.wwimmo.imageeditor.utils.entities;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -20,6 +19,7 @@ import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.wwimmo.imageeditor.utils.Utility;
 import com.wwimmo.imageeditor.utils.layers.Layer;
 
 import java.lang.ref.WeakReference;
@@ -27,25 +27,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MeasureToolEntity extends MotionEntity {
-    private static final int CORNER_RADIUS = 8;
     private static final int BORDER_PADDING = 16;
     private static final int POINTS_COUNT = 2;
-    private static final int POINT_TOUCH_AREA = 100;
-    private static final int INNER_RADIUS = 14;
-    private static final int OUTER_RADIUS = 22;
+    private static final int POINT_TOUCH_AREA = 74 / 2;
+    private static final int INNER_RADIUS = 12 / 2;
+    private static final int OUTER_RADIUS = 16 / 2;
+    private static final int TEXT_BOX_SIZE = 48;
+
     private static final int OUTER_RADIUS_CONNECTION = OUTER_RADIUS - 1;
     private static final int STROKE_WIDTH = 4;
-    private static final int LENS_WIDTH = 260;
-    private static final int LENS_HEIGHT = 160;
+    private static final int LENS_SIZE = 74;
     private static final int ZOOM = 2;
     private static final float ENDPOINT_OFFSET_RATIO = 1f / 8f;
+    private static final int alpha = (int) (255 * 0.3f);
     private final int mWidth;
     private final int mHeight;
     private final List<PointF> currentPoints;
+    private final List<Boolean> pointsVisited;
     private final TextPaint mTextPaint;
     private final String endpointImage;
-    private final boolean hasFocusHighlight = false;
-    float zoomStrokeWidth = 2;
     private int mStrokeColor;
     private Paint mPaint;
     private Bitmap mBitmap;
@@ -59,22 +59,41 @@ public class MeasureToolEntity extends MotionEntity {
     private boolean focused;
     private Bitmap endpointBitmap;
     private RectF endpointRect;
+    // scaled values for the shapes
+    private int innerRadius;
+    private int outerRadius;
+    private int touchRadius;
+    private int lensSize;
+    private int strokeWidth;
+    private int textBoxSize;
 
 
     public MeasureToolEntity(@NonNull Layer layer,
                              @IntRange(from = 1) int canvasWidth,
                              @IntRange(from = 1) int canvasHeight,
-                             @Nullable String endpointImage) {
+                             @Nullable String endpointImage,
+                             DisplayMetrics dm) {
         super(layer, canvasWidth, canvasHeight);
 
         this.mWidth = canvasWidth;
         this.mHeight = canvasHeight;
         this.mStrokeColor = Color.BLACK;
         currentPoints = new ArrayList<>();
+        pointsVisited = new ArrayList<>();
         updateEntity(false);
         mTextPaint = new TextPaint();
         mTextPaint.setAntiAlias(true);
         this.endpointImage = endpointImage;
+        this.init(dm);
+    }
+
+    private void init(DisplayMetrics dm) {
+        innerRadius = Utility.convertDpToPx(dm, INNER_RADIUS);
+        outerRadius = Utility.convertDpToPx(dm, OUTER_RADIUS);
+        touchRadius = Utility.convertDpToPx(dm, POINT_TOUCH_AREA);
+        lensSize = Utility.convertDpToPx(dm, LENS_SIZE);
+        strokeWidth = Utility.convertDpToPx(dm, STROKE_WIDTH);
+        textBoxSize = Utility.convertDpToPx(dm, TEXT_BOX_SIZE);
     }
 
     private void updateEntity(boolean moveToPreviousCenter) {
@@ -125,19 +144,26 @@ public class MeasureToolEntity extends MotionEntity {
             for (int i = 0; i < currentPoints.size(); i++) {
                 PointF pointF = currentPoints.get(i);
 
-                if (hasFocusHighlight && pointF == selectedPoint && focused) {
+                if (pointF == selectedPoint && focused) {
                     // highlight point
-                    this.mPaint.setAlpha(50);
-                    this.mPaint.setStyle(Paint.Style.FILL);
+                    this.mPaint.setAlpha(alpha);
+                    this.mPaint.setStrokeWidth(strokeWidth * 3);
+                    this.mPaint.setStyle(Paint.Style.STROKE);
                     float touchArea = getTouchRadius();
                     this.mCanvas.drawCircle(pointF.x, pointF.y, touchArea, this.mPaint);
-                    this.mPaint.setAlpha(255);
+                } else if (currentPoints.size() > 1) {
+                    this.mPaint.setAlpha(alpha);
+                    this.mPaint.setStyle(Paint.Style.STROKE);
+                    this.mPaint.setStrokeWidth(strokeWidth * 4);
+                    this.mCanvas.drawCircle(pointF.x, pointF.y, outerRadius + innerRadius + strokeWidth, this.mPaint);
                 }
+                this.mPaint.setAlpha(255);
+                this.mPaint.setStyle(Paint.Style.FILL);
 
                 if (i > 0) {
                     // path between points
                     PointF prevPointF = currentPoints.get(i - 1);
-                    drawConnection(prevPointF, pointF, true);
+                    drawConnection(prevPointF, pointF, false);
                 }
 
                 this.drawPoint(pointF, this.mPaint);
@@ -163,18 +189,18 @@ public class MeasureToolEntity extends MotionEntity {
 
     private void drawZoomLens(PointF centerPoint, Bitmap background) {
         // Draw rect near the point
-        float x0 = centerPoint.x - POINT_TOUCH_AREA;
-        float y0 = centerPoint.y - POINT_TOUCH_AREA;
-        if (x0 < LENS_WIDTH) {
-            x0 = centerPoint.x + POINT_TOUCH_AREA + LENS_WIDTH;
+        float x0 = centerPoint.x - touchRadius;
+        float y0 = centerPoint.y - touchRadius;
+        if (x0 < lensSize) {
+            x0 = centerPoint.x + touchRadius + lensSize;
         }
-        if (y0 < LENS_HEIGHT) {
-            y0 = centerPoint.y + POINT_TOUCH_AREA + LENS_HEIGHT;
+        if (y0 < lensSize) {
+            y0 = centerPoint.y + touchRadius + lensSize;
         }
 
         RectF drawingRect = new RectF(
-                x0 - LENS_WIDTH,
-                y0 - LENS_HEIGHT,
+                x0 - lensSize,
+                y0 - lensSize,
                 x0,
                 y0
         );
@@ -182,12 +208,12 @@ public class MeasureToolEntity extends MotionEntity {
 
         // Add zooming area
         if (mZoomBitmap == null) {
-            mZoomBitmap = Bitmap.createBitmap(LENS_WIDTH, LENS_HEIGHT, Bitmap.Config.ARGB_8888);
+            mZoomBitmap = Bitmap.createBitmap(lensSize, lensSize, Bitmap.Config.ARGB_8888);
             mZoomCanvas = new Canvas(this.mZoomBitmap);
         }
 
-        int zoomedHalfWidth = LENS_WIDTH / ZOOM / 2;
-        int zoomedHalfHeight = LENS_HEIGHT / ZOOM / 2;
+        int zoomedHalfWidth = lensSize / ZOOM / 2;
+        int zoomedHalfHeight = lensSize / ZOOM / 2;
         float scaleXY = (float) background.getWidth() / this.mCanvas.getWidth();
         int srcCenterX = (int) (centerPoint.x * scaleXY);
         int srcCenterY = (int) (centerPoint.y * scaleXY);
@@ -198,34 +224,30 @@ public class MeasureToolEntity extends MotionEntity {
                 srcCenterY + zoomedHalfHeight
         );
 
-        Rect targetRect = new Rect(0, 0, LENS_WIDTH, LENS_HEIGHT);
+        Rect targetRect = new Rect(0, 0, lensSize, lensSize);
         mZoomCanvas.save();
         mZoomCanvas.drawBitmap(background, srcRect, targetRect, null);
         mZoomCanvas.restore();
         // Post effect
         mCanvas.save();
-        mCanvas.drawBitmap(mZoomBitmap, null, drawingRect, null);
-        mCanvas.restore();
-
-        this.mPaint.setStyle(Paint.Style.STROKE);
-        this.mCanvas.drawRect(drawingRect, this.mPaint);
-
         // Add center indicator
         float centerX = drawingRect.centerX();
         float centerY = drawingRect.centerY();
+        // Create a circular path
+        Path path = new Path();
+        path.addCircle(centerX, centerY, lensSize / 2, Path.Direction.CW);
+        // Clip the canvas to the circular path
+        mCanvas.clipPath(path);
+        mCanvas.drawBitmap(mZoomBitmap, null, drawingRect, null);
+        mCanvas.restore();
+
 
         this.mPaint.setStyle(Paint.Style.STROKE);
-        this.mPaint.setStrokeWidth(zoomStrokeWidth);
+        this.mPaint.setStrokeWidth(strokeWidth);
+        this.mCanvas.drawCircle(centerX, centerY, lensSize / 2, this.mPaint);
 
-        int lineSize = OUTER_RADIUS / 3;
-        // top to center
-        this.mCanvas.drawLine(centerX, centerY - OUTER_RADIUS, centerX, centerY - lineSize, this.mPaint);
-        // center to bottom
-        this.mCanvas.drawLine(centerX, centerY + lineSize, centerX, centerY + OUTER_RADIUS, this.mPaint);
-        // left to center
-        this.mCanvas.drawLine(centerX - OUTER_RADIUS, centerY, centerX - lineSize, centerY, this.mPaint);
-        // right to center
-        this.mCanvas.drawLine(centerX + lineSize, centerY, centerX + OUTER_RADIUS, centerY, this.mPaint);
+        this.mPaint.setStyle(Paint.Style.FILL);
+        this.mCanvas.drawCircle(centerX, centerY, strokeWidth, this.mPaint);
     }
 
 
@@ -305,9 +327,6 @@ public class MeasureToolEntity extends MotionEntity {
 
 
     private void drawText(PointF a, PointF b, Canvas canvas, TextPaint textPaint, Paint bgPaint, String text) {
-//        float centerX = (a.x + b.x) / 2;
-//        float centerY = (a.y + b.y) / 2;
-
         Rect textRect = new Rect();
         textPaint.getTextBounds(text, 0, text.length(), textRect);
         int textWidth = (int) (textRect.width() + Math.max(2, mScaledDensity * 2));
@@ -322,42 +341,39 @@ public class MeasureToolEntity extends MotionEntity {
         );
 
         canvas.save();
-        PointF textStartPoint = getLabelStartPoint(textWidth, sl.getHeight());
-        float translateX = textStartPoint.x;
-        float translateY = textStartPoint.y;
 
-//        // calculate text center
-//        // top x same, y above center
-//        translateY = Math.min(a.y, b.y) - POINT_TOUCH_AREA;
-//        // bottom
-//        if (translateY - sl.getHeight() < 0) {
-//            translateY = Math.max(a.y, b.y) + POINT_TOUCH_AREA;
-//        }
-        canvas.translate(translateX, translateY);
+        int halfTextHeight = textBoxSize / 2;
+        int halfTextWidth = textWidth / 2;
+        float midX = (a.x + b.x) / 2;
+        float midY = (a.y + b.y) / 2;
+
+        canvas.translate(midX, midY);
         // background first
         bgPaint.setStyle(Paint.Style.FILL);
         RectF bgRect = new RectF();
         bgRect.set(
-                -BORDER_PADDING,
-                -BORDER_PADDING,
-                textWidth + BORDER_PADDING,
-                sl.getHeight() + BORDER_PADDING
+                -halfTextHeight - halfTextWidth,
+                -halfTextHeight,
+                halfTextWidth + halfTextHeight,
+                halfTextHeight
         );
-        canvas.drawRoundRect(bgRect, CORNER_RADIUS, CORNER_RADIUS, bgPaint);
+        canvas.drawRoundRect(bgRect, halfTextHeight, halfTextHeight, bgPaint);
         // then text
+        canvas.translate(-halfTextWidth, -halfTextHeight / 2);
         sl.draw(canvas);
+
 
         canvas.restore();
     }
 
     private void drawConnection(PointF startPoint, PointF endPoint, boolean hasOffset) {
         if (hasOffset) {
-
             float radius = endpointBitmap != null ? endpointBitmap.getWidth() * ENDPOINT_OFFSET_RATIO : OUTER_RADIUS_CONNECTION;
             PointF newEnd = getOuterRadiusPoint(endPoint, startPoint, radius);
             PointF newStart = getOuterRadiusPoint(startPoint, endPoint, radius);
             mCanvas.drawLine(newStart.x, newStart.y, newEnd.x, newEnd.y, mPaint);
         } else {
+            mPaint.setStrokeWidth(4);
             mCanvas.drawLine(startPoint.x, startPoint.y, endPoint.x, endPoint.y, mPaint);
         }
 
@@ -441,8 +457,8 @@ public class MeasureToolEntity extends MotionEntity {
         if (currentPoints.size() < POINTS_COUNT) {
             PointF point = new PointF(x, y);
             currentPoints.add(point);
+            pointsVisited.add(false);
             selectedPoint = point;
-            setFocused(true);
             return currentPoints.size() < POINTS_COUNT || mCurrentText == null;
         }
         return mCurrentText == null;
@@ -461,17 +477,10 @@ public class MeasureToolEntity extends MotionEntity {
     }
 
     private void drawPoint(PointF point, Paint paint) {
-        // draw endpoint image if present
-        if (endpointBitmap != null) {
-            drawImageEndpoint(point, paint);
-        } else {
-            float x = point.x;
-            float y = point.y;
-            this.mPaint.setStyle(Paint.Style.FILL);
-            this.mCanvas.drawCircle(x, y, INNER_RADIUS, paint);
-            this.mPaint.setStyle(Paint.Style.STROKE);
-            this.mCanvas.drawCircle(x, y, OUTER_RADIUS, paint);
-        }
+        float x = point.x;
+        float y = point.y;
+        this.mPaint.setStyle(Paint.Style.FILL);
+        this.mCanvas.drawCircle(x, y, innerRadius, paint);
     }
 
 
@@ -495,7 +504,7 @@ public class MeasureToolEntity extends MotionEntity {
     }
 
     float getTouchRadius() {
-        return endpointBitmap != null && endpointBitmap.getWidth() > 0 ? endpointBitmap.getWidth() / 2f :  POINT_TOUCH_AREA;
+        return touchRadius;
     }
 
     public boolean handleTranslate(PointF delta) {
@@ -505,9 +514,12 @@ public class MeasureToolEntity extends MotionEntity {
             boolean toCloseToOtherPoint = false;
             for (int i = 0; i < currentPoints.size(); i++) {
                 PointF originPoint = currentPoints.get(i);
-                if (originPoint != selectedPoint && isInCircle(originPoint.x, originPoint.y, POINT_TOUCH_AREA, newX, newY)) {
+                if (originPoint != selectedPoint && isInCircle(originPoint.x, originPoint.y, touchRadius, newX, newY)) {
                     toCloseToOtherPoint = true;
                     break;
+                }
+                if (originPoint == selectedPoint) {
+                    pointsVisited.set(i, true);
                 }
             }
             if (!toCloseToOtherPoint) {
@@ -548,16 +560,25 @@ public class MeasureToolEntity extends MotionEntity {
     @Override
     public int getDrawingStep() {
         if (currentPoints.size() < POINTS_COUNT) {
-            return currentPoints.size();
+            return 1;
         } else {
             return currentPoints.size() + (mCurrentText == null ? 0 : 1);
         }
     }
 
     public boolean isTextStep() {
-        return getDrawingStep() == POINTS_COUNT;
+        return getDrawingStep() == POINTS_COUNT && isAllVisited();
     }
 
+    public boolean isAllVisited() {
+        if (pointsVisited.size() < POINTS_COUNT) return false;
+        for (int i = 0; i < pointsVisited.size(); i++) {
+            if (!pointsVisited.get(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     public void addText(String text, int fontSize, DisplayMetrics displayMetrics) {
         mCurrentText = text;
