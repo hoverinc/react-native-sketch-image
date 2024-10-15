@@ -22,8 +22,8 @@ int MAX_POINTS_COUNT = 2;
 int DEFAULT_SELECTED_POSITION = -1;
 int TEXT_PADDING = 24;
 int TEXT_BOX_SIZE = 48;
-float pointSize = 10;
-float touchPointSize = 50;
+float pointSize = 12;
+float touchPointSize = 37;
 int selectedPosition;
 
 int LENS_WIDTH = 72;
@@ -142,25 +142,22 @@ NSTimer *timer;
             if (pointSelect == TRUE) {
                 CGPoint point = p;
                 // Draw selection indicator
-                float andgeInRadians = (25 * M_PI)/ 180;
-                CGContextSetLineWidth(contextRef, 4);
-                CGContextSetStrokeColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
-                CGContextAddArc(contextRef, point.x  , point.y, touchPointSize , -M_PI + andgeInRadians, -andgeInRadians, 0);
+                CGContextSetLineWidth(contextRef, 8);
+                CGContextSetStrokeColorWithColor(contextRef, [[self.entityStrokeColor colorWithAlphaComponent:0.5f] CGColor]);
+                CGContextAddArc(contextRef, point.x  , point.y, touchPointSize , 0, 2*M_PI, 0);
                 CGContextStrokePath(contextRef);
-                CGContextAddArc(contextRef, point.x  , point.y, touchPointSize , andgeInRadians, M_PI - andgeInRadians, 0);
-                CGContextStrokePath(contextRef);
-
-                // Restore
-                CGContextSetLineWidth(contextRef, 2);
             }else if ([points count] > 1) {
                 // Pulsing indicator
                 // Calculate the pulsing circle's size
-                CGFloat circleRadius = 5 + 11 * pulseScale; // Base radius 10 and changable till 32
-                CGRect circleRect = [self buildRect:p withSize:circleRadius*2];
-                // Draw the circle
-                CGContextSetFillColorWithColor(contextRef, [[self.entityStrokeColor colorWithAlphaComponent:0.5f] CGColor]);
-                CGContextFillEllipseInRect(contextRef, circleRect);
+                CGFloat arcWidth =  8 * pulseScale;
+                CGContextSetLineWidth(contextRef, arcWidth);
+                CGContextSetStrokeColorWithColor(contextRef, [[self.entityStrokeColor colorWithAlphaComponent:0.5f] CGColor]);
+                CGContextAddArc(contextRef, p.x  , p.y, 14 , 0, 2 * M_PI, 0);
+                CGContextStrokePath(contextRef);
             }
+            // Restore
+            CGContextSetLineWidth(contextRef, 2);
+            CGContextSetStrokeColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
 
             bool hasText = [self text] != nil;
             // draw text
@@ -397,7 +394,7 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
 }
 
 - (void)drawConnection:(CGContextRef)contextRef withStartPoint:(CGPoint)startPoint withEndPoint:(CGPoint)endPoint withOffsetEnable:(bool)hasOffset {
-    CGContextSetLineWidth(contextRef, 2);
+    CGContextSetLineWidth(contextRef, 4);
     CGContextBeginPath(contextRef);
     CGPoint newStart = startPoint;
     CGPoint newEnd = endPoint;
@@ -413,17 +410,6 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
         newEnd = [self getOuterRadiusPoint:endPoint withEndPoint:startPoint withRadius:radius];
     }
 
-    // Semi transparent line
-    UIColor* backgroundLineColor = [[UIColor darkGrayColor] colorWithAlphaComponent:0.5f];
-    CGContextSetStrokeColorWithColor(contextRef, [backgroundLineColor CGColor]);
-    CGContextMoveToPoint(contextRef, newStart.x, newStart.y);
-    CGContextAddLineToPoint(contextRef, newEnd.x, newEnd.y);
-    CGContextStrokePath(contextRef);
-
-    // Dashed line
-    float dashPhase = 0.0;
-    CGFloat dash[] = {4.0, 4.0};
-    CGContextSetLineDash(contextRef, dashPhase, dash, 2);
     CGContextSetStrokeColorWithColor(contextRef, [self.entityStrokeColor CGColor]);
     CGContextMoveToPoint(contextRef, newStart.x, newStart.y);
     CGContextAddLineToPoint(contextRef, newEnd.x, newEnd.y);
