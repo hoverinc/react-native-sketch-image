@@ -139,6 +139,7 @@ public class MeasureToolEntity extends MotionEntity {
         this.mCanvas.save();
         this.mCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         float savedStrokeWidth = mPaint.getStrokeWidth();
+        float outerRadiusFull = outerRadius + innerRadius + strokeWidth;
 
         if (currentPoints.size() > 0) {
             for (int i = 0; i < currentPoints.size(); i++) {
@@ -147,15 +148,15 @@ public class MeasureToolEntity extends MotionEntity {
                 if (pointF == selectedPoint && focused) {
                     // highlight point
                     this.mPaint.setAlpha(alpha);
-                    this.mPaint.setStrokeWidth(strokeWidth * 3);
+                    this.mPaint.setStrokeWidth(strokeWidth * 2);
                     this.mPaint.setStyle(Paint.Style.STROKE);
                     float touchArea = getTouchRadius();
                     this.mCanvas.drawCircle(pointF.x, pointF.y, touchArea, this.mPaint);
                 } else if (currentPoints.size() > 1) {
                     this.mPaint.setAlpha(alpha);
                     this.mPaint.setStyle(Paint.Style.STROKE);
-                    this.mPaint.setStrokeWidth(strokeWidth * 4);
-                    this.mCanvas.drawCircle(pointF.x, pointF.y, outerRadius + innerRadius + strokeWidth, this.mPaint);
+                    this.mPaint.setStrokeWidth(strokeWidth * 3);
+                    this.mCanvas.drawCircle(pointF.x, pointF.y, outerRadiusFull, this.mPaint);
                 }
                 this.mPaint.setAlpha(255);
                 this.mPaint.setStyle(Paint.Style.FILL);
@@ -183,6 +184,23 @@ public class MeasureToolEntity extends MotionEntity {
             mPaint.setStrokeWidth(savedStrokeWidth);
         }
 
+        if (currentPoints.size() > 1) {
+            boolean firstVisited = this.pointsVisited.get(0);
+            boolean secondVisited = this.pointsVisited.get(1);
+            if (!secondVisited && selectedPoint != this.currentPoints.get(1)) {
+                // Highlight second
+                PointF imageCenterPoint = new PointF();
+                PointF oppositePoint = this.currentPoints.get(1);
+                imageCenterPoint.set(oppositePoint.x, oppositePoint.y + outerRadiusFull + 2 * strokeWidth);
+                this.drawImageEndpoint(imageCenterPoint, mPaint);
+            } else if (!firstVisited && selectedPoint != this.currentPoints.get(0)) {
+                // Highlight first
+                PointF imageCenterPoint = new PointF();
+                PointF oppositePoint = this.currentPoints.get(0);
+                imageCenterPoint.set(oppositePoint.x, oppositePoint.y + outerRadiusFull + 2 * strokeWidth);
+                this.drawImageEndpoint(imageCenterPoint, mPaint);
+            }
+        }
 
         this.mCanvas.restore();
     }
@@ -236,10 +254,10 @@ public class MeasureToolEntity extends MotionEntity {
         // Clip the canvas to the circular path
         mCanvas.clipPath(path);
         RectF drawingRect = new RectF(
-                centerX - lensSize /2,
-                centerY - lensSize/ 2,
-                centerX + lensSize/ 2,
-                centerY + lensSize/ 2
+                centerX - lensSize / 2,
+                centerY - lensSize / 2,
+                centerX + lensSize / 2,
+                centerY + lensSize / 2
         );
         mCanvas.drawBitmap(mZoomBitmap, null, drawingRect, null);
         mCanvas.restore();
@@ -306,7 +324,7 @@ public class MeasureToolEntity extends MotionEntity {
 
     private PointF getLensPoint(float width, float height) {
         RectF cornerRect = new RectF();
-        float padding = height / 3 ;
+        float padding = height / 3;
         float rectWidth = width + padding;
         float rectHeight = height + padding;
 
@@ -317,7 +335,7 @@ public class MeasureToolEntity extends MotionEntity {
         }
         cornerRect.set(0, calculatedHeight - rectHeight, rectWidth, calculatedHeight);
         if (!isCurrentPointsInRect(cornerRect)) {
-            return new PointF(padding + width / 2, calculatedHeight - height /2  - padding);
+            return new PointF(padding + width / 2, calculatedHeight - height / 2 - padding);
         }
 
         // Top left
@@ -467,22 +485,24 @@ public class MeasureToolEntity extends MotionEntity {
             PointF point = new PointF(x, y);
             currentPoints.add(point);
             pointsVisited.add(false);
-            selectedPoint = point;
             return currentPoints.size() < POINTS_COUNT || mCurrentText == null;
         }
         return mCurrentText == null;
     }
 
     private void drawImageEndpoint(PointF point, Paint paint) {
+        if (endpointBitmap == null) return;
         if (endpointRect == null) {
             endpointRect = new RectF();
         }
         float x = point.x;
         float y = point.y;
-        float halfHeight = endpointBitmap.getHeight() / 2f;
-        float halfWidth = endpointBitmap.getWidth() / 2f;
-        endpointRect.set(x - halfWidth, y - halfHeight, x + halfWidth, y + halfHeight);
-        this.mCanvas.drawBitmap(endpointBitmap, null, endpointRect, paint);
+        float height = endpointBitmap.getHeight();
+        float width = endpointBitmap.getWidth();
+        if (height > 0 && width > 0) {
+            endpointRect.set(x, y, x + width, y + height);
+            this.mCanvas.drawBitmap(endpointBitmap, null, endpointRect, paint);
+        }
     }
 
     private void drawPoint(PointF point, Paint paint) {
