@@ -591,7 +591,7 @@ public class MeasureToolEntity extends MotionEntity {
                 displayMetrics);
         mTextPaint.setStyle(Paint.Style.FILL);
         mTextPaint.setTextSize(realFontSize);
-        mTextPaint.setColor(Color.WHITE);
+        mTextPaint.setColor(Color.BLACK);
         mScaledDensity = displayMetrics.scaledDensity;
     }
 
