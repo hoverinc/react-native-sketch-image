@@ -36,8 +36,8 @@ public class MeasureToolEntity extends MotionEntity {
 
     private static final int OUTER_RADIUS_CONNECTION = OUTER_RADIUS - 1;
     private static final int STROKE_WIDTH = 4;
-    private static final int LENS_SIZE = 74;
-    private static final int ZOOM = 2;
+    private static final int LENS_SIZE = 72;
+    private static final int ZOOM = 3;
     private static final float ENDPOINT_OFFSET_RATIO = 1f / 8f;
     private static final int alpha = (int) (255 * 0.3f);
     private final int mWidth;
@@ -198,13 +198,6 @@ public class MeasureToolEntity extends MotionEntity {
             y0 = centerPoint.y + touchRadius + lensSize;
         }
 
-        RectF drawingRect = new RectF(
-                x0 - lensSize,
-                y0 - lensSize,
-                x0,
-                y0
-        );
-
 
         // Add zooming area
         if (mZoomBitmap == null) {
@@ -224,20 +217,30 @@ public class MeasureToolEntity extends MotionEntity {
                 srcCenterY + zoomedHalfHeight
         );
 
+        mZoomCanvas.save();
+        // Draw the scaled image
+        PointF drawPoint = this.getLensPoint(lensSize, lensSize);
         Rect targetRect = new Rect(0, 0, lensSize, lensSize);
         mZoomCanvas.save();
         mZoomCanvas.drawBitmap(background, srcRect, targetRect, null);
         mZoomCanvas.restore();
         // Post effect
         mCanvas.save();
+
         // Add center indicator
-        float centerX = drawingRect.centerX();
-        float centerY = drawingRect.centerY();
+        int centerX = (int) drawPoint.x;
+        int centerY = (int) drawPoint.y;
         // Create a circular path
         Path path = new Path();
         path.addCircle(centerX, centerY, lensSize / 2, Path.Direction.CW);
         // Clip the canvas to the circular path
         mCanvas.clipPath(path);
+        RectF drawingRect = new RectF(
+                centerX - lensSize /2,
+                centerY - lensSize/ 2,
+                centerX + lensSize/ 2,
+                centerY + lensSize/ 2
+        );
         mCanvas.drawBitmap(mZoomBitmap, null, drawingRect, null);
         mCanvas.restore();
 
@@ -301,28 +304,34 @@ public class MeasureToolEntity extends MotionEntity {
         return false;
     }
 
-    private PointF getLabelStartPoint(float textWidth, float textHeight) {
+    private PointF getLensPoint(float width, float height) {
         RectF cornerRect = new RectF();
-        float textRectWidth = textWidth + 2f * BORDER_PADDING;
-        float textRectHeight = textHeight + 1.5f * BORDER_PADDING;
-        cornerRect.set(0, 0, textRectWidth, textRectHeight);
-        // Top left
-        if (!isCurrentPointsInRect(cornerRect)) {
-            return new PointF(2 * BORDER_PADDING, textRectHeight / 2f);
-        }
-        // Top right
-        cornerRect.set(getWidth() - textRectWidth, 0, getWidth(), textRectHeight);
-        if (!isCurrentPointsInRect(cornerRect)) {
-            return new PointF(getWidth() - textRectWidth, textRectHeight / 2f);
-        }
+        float padding = height / 3 ;
+        float rectWidth = width + padding;
+        float rectHeight = height + padding;
 
+        // Bottom left
         int calculatedHeight = getHeight();
         if (getMeasuredHeight() > 0 && getMeasuredHeight() < calculatedHeight) {
             calculatedHeight = getMeasuredHeight();
         }
+        cornerRect.set(0, calculatedHeight - rectHeight, rectWidth, calculatedHeight);
+        if (!isCurrentPointsInRect(cornerRect)) {
+            return new PointF(padding + width / 2, calculatedHeight - height /2  - padding);
+        }
 
-        // Bottom right
-        return new PointF(getWidth() - textRectWidth, calculatedHeight - textHeight - 2 * BORDER_PADDING);
+        // Top left
+        cornerRect.set(0, 0, rectWidth, rectHeight);
+        if (!isCurrentPointsInRect(cornerRect)) {
+            return new PointF(padding + width / 2, height / 2 + padding);
+        }
+        // Top right
+        cornerRect.set(getWidth() - rectWidth, 0, getWidth(), rectHeight);
+        if (!isCurrentPointsInRect(cornerRect)) {
+            return new PointF(getWidth() - padding - width / 2, height / 2 + padding);
+        }
+
+        return new PointF(getWidth() - padding - width / 2, calculatedHeight - height / 2 - padding);
     }
 
 
@@ -540,14 +549,10 @@ public class MeasureToolEntity extends MotionEntity {
             mCurrentText = null;
             return true;
         }
-        if (currentPoints.size() > 0) {
-            int lastIndex = currentPoints.size() - 1;
-            PointF last = currentPoints.get(lastIndex);
-            if (last == selectedPoint) {
-                selectedPoint = null;
-            }
-            currentPoints.remove(lastIndex);
-            return currentPoints.size() > 0;
+        if (!currentPoints.isEmpty()) {
+            currentPoints.clear();
+            pointsVisited.clear();
+            return false;
         }
         return false;
     }
