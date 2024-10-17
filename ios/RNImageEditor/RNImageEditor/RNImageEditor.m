@@ -110,6 +110,15 @@
     return TRUE;
 }
 
+- (BOOL)hasMeasurements {
+    for (MotionEntity *entity in self.motionEntities) {
+        if ([entity class] == [MeasurementEntity class]){
+            return YES;
+        }
+    }
+    return NO;
+}
+
 - (void)drawRect:(CGRect)rect {
     CGContextRef context = UIGraphicsGetCurrentContext();
 
@@ -146,6 +155,12 @@
 
     if (_frozenImage) {
         CGContextDrawImage(context, bounds, _frozenImage);
+        if ([self hasMeasurements]){
+            // draw dark overlay
+            CGContextSetFillColorWithColor(context, [[UIColor.blackColor colorWithAlphaComponent:0.3f] CGColor]);
+            CGContextFillRect(context, bounds);
+            CGContextSetFillColorWithColor(context, [UIColor.clearColor CGColor]);
+        }
     }
 
     if (_translucentFrozenImage && _currentPath.isTranslucent) {
@@ -451,6 +466,13 @@
 
         CGContextDrawImage(context, targetRect, _frozenImage);
         CGContextDrawImage(context, targetRect, _translucentFrozenImage);
+
+        if ([self hasMeasurements]){
+            // draw dark overlay
+            CGContextSetFillColorWithColor(context, [[UIColor.blackColor colorWithAlphaComponent:0.3f] CGColor]);
+            CGContextFillRect(context, targetRect);
+            CGContextSetFillColorWithColor(context, [UIColor.clearColor CGColor]);
+        }
 
         if (includeText) {
             for (BackgroundText *text in _arrTextOnSketch) {
@@ -1218,9 +1240,9 @@
             if ([self.selectedEntity class] == [MeasurementEntity class]) {
                  if (!_shouldHandleEndMove && [_measurementEntity isTextStep]) {
                      [self onDrawingStateChanged];
-                 } else {
-                     [((MeasurementEntity *)self.selectedEntity) setLocalFocused:false];
                  }
+                 [((MeasurementEntity *)self.selectedEntity) setLocalFocused:false];
+
             }
             if (_shouldHandleEndMove) {
                 if (!_isMeasurementInProgress) {

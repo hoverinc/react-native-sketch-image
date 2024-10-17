@@ -13,6 +13,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
@@ -152,6 +153,8 @@ public class ImageEditor extends View {
     private boolean mDisableHardwareAccelerated = false;
     private boolean mNeedsFullRedraw = true;
     private boolean mIsImageChanged = false;
+    private final Paint darkOverlayPaint;
+    private Paint entityPaint = new Paint();
 
     public ImageEditor(ThemedReactContext context) {
         super(context);
@@ -164,6 +167,12 @@ public class ImageEditor extends View {
 
         // Is initialized at bottom of class w/ other GestureDetectors
         setOnTouchListener(mOnTouchListener);
+
+        // Create a paint object for the mask
+        darkOverlayPaint = new Paint();
+        darkOverlayPaint.setColor(Color.BLACK);
+        darkOverlayPaint.setAlpha(102); // 30% opacity (255 * 0.3 ~ 76, closest integer 102)
+        darkOverlayPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DARKEN));
     }
 
     public static Bitmap getBitmapFromDrawable(Context context, @DrawableRes int drawableId) {
@@ -203,7 +212,7 @@ public class ImageEditor extends View {
             }
         }
         if (lastEntity != null) {
-            double scale =  mBackgroundImage != null && cropToImageSize ? (double) mOriginalBitmapWidth /  getWidth() : 1;
+            double scale = mBackgroundImage != null && cropToImageSize ? (double) mOriginalBitmapWidth / getWidth() : 1;
             int pointsSize = lastEntity.getCurrentPoints().size();
             int[][] positions = new int[pointsSize][];
             for (int i = 0; i < pointsSize; i++) {
@@ -234,6 +243,10 @@ public class ImageEditor extends View {
             Utility.fillImage(mBackgroundImage.getWidth(), mBackgroundImage.getHeight(),
                     bitmap.getWidth(), bitmap.getHeight(), mBitmapContentMode).roundOut(targetRect);
             canvas.drawBitmap(mBackgroundImage, null, targetRect, null);
+            boolean hasMask = this.hasMeasurement();
+            if (hasMask) {
+                canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), darkOverlayPaint);
+            }
         }
 
         if (includeText) {
@@ -282,7 +295,7 @@ public class ImageEditor extends View {
         mEntityStrokeWidth = Utility.convertPxToDpAsFloat(mContext.getResources().getDisplayMetrics(), strokeWidth);
         mPaths.add(mCurrentPath);
         boolean isErase = strokeColor == Color.TRANSPARENT;
-        if (isErase && mDisableHardwareAccelerated == false) {
+        if (isErase && !mDisableHardwareAccelerated) {
             mDisableHardwareAccelerated = true;
             // setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         }
@@ -322,7 +335,7 @@ public class ImageEditor extends View {
             SketchData newPath = new SketchData(id, strokeColor, strokeWidth, points);
             mPaths.add(newPath);
             boolean isErase = strokeColor == Color.TRANSPARENT;
-            if (isErase && mDisableHardwareAccelerated == false) {
+            if (isErase && !mDisableHardwareAccelerated) {
                 mDisableHardwareAccelerated = true;
                 // setLayerType(View.LAYER_TYPE_SOFTWARE, null);
             }
@@ -396,11 +409,21 @@ public class ImageEditor extends View {
         }
     }
 
+    private boolean hasMeasurement () {
+        for (int i = 0; i < mEntities.size(); i++) {
+            MotionEntity me = mEntities.get(i);
+            if (me instanceof MeasureToolEntity) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         mSketchCanvas = canvas;
-
+        boolean hasMask = this.hasMeasurement();
         if (mNeedsFullRedraw && mDrawingCanvas != null) {
             mDrawingCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
 
@@ -416,6 +439,11 @@ public class ImageEditor extends View {
             mSketchCanvas.drawBitmap(mBackgroundImage, null,
                     Utility.fillImage(mBackgroundImage.getWidth(), mBackgroundImage.getHeight(), dstRect.width(), dstRect.height(), mBitmapContentMode),
                     null);
+
+            if (hasMask) {
+                mSketchCanvas.drawRect(0, 0, mSketchCanvas.getWidth(), mSketchCanvas.getHeight(), darkOverlayPaint);
+            }
+
         }
 
         for (CanvasText text : mArrSketchOnText) {
@@ -609,7 +637,7 @@ public class ImageEditor extends View {
             ExifInterface exif = new ExifInterface(path);
             exif.setAttribute(ExifInterface.TAG_IMAGE_UNIQUE_ID, originalFile.getName());
             if (position != null) {
-                 exif.setAttribute(ExifInterface.TAG_USER_COMMENT, position);
+                exif.setAttribute(ExifInterface.TAG_USER_COMMENT, position);
             }
             exif.saveAttributes();
         } catch (Exception e) {
@@ -983,8 +1011,8 @@ public class ImageEditor extends View {
             });
         }
         addEntityAndPosition(measurementEntity);
-        measurementEntity.addPoint(measurementEntity.getWidth() * 0.35f, measurementEntity.getHeight() /2);
-        measurementEntity.addPoint(measurementEntity.getWidth() * 0.65f, measurementEntity.getHeight() /2);
+        measurementEntity.addPoint(measurementEntity.getWidth() * 0.35f, measurementEntity.getHeight() / 2);
+        measurementEntity.addPoint(measurementEntity.getWidth() * 0.65f, measurementEntity.getHeight() / 2);
     }
 
     protected void addSquareEntity(int width) {
@@ -1085,15 +1113,14 @@ public class ImageEditor extends View {
         entity.setBorderStyle(mEntityBorderStyle);
     }
 
-    private void drawAllEntities(Canvas canvas) {
-        Paint paint = new Paint();
-        paint.setColor(mEntityStrokeColor);
-        paint.setStrokeWidth(mEntityStrokeWidth);
 
+    private void drawAllEntities(Canvas canvas) {
         for (int i = 0; i < mEntities.size(); i++) {
+        entityPaint.setColor(mEntityStrokeColor);
+        entityPaint.setStrokeWidth(mEntityStrokeWidth);
             MotionEntity me = mEntities.get(i);
             me.setMeasuredSize(measuredWidth, measuredHeight);
-            me.draw(canvas, paint);
+            me.draw(canvas, entityPaint);
         }
     }
 
@@ -1458,13 +1485,14 @@ public class ImageEditor extends View {
         public void onMoveEnd(MoveGestureDetector detector) {
             // Left item selected
             super.onMoveEnd(detector);
-            if (mSelectedEntity instanceof MeasureToolEntity) {
-                MeasureToolEntity entity = (MeasureToolEntity) mSelectedEntity;
+            if (mSelectedEntity instanceof MeasureToolEntity entity) {
                 if (!shouldUpdateOnEnd && entity.isTextStep()) {
                     onDrawingStateChanged();
-                }else {
-                    ((MeasureToolEntity) mSelectedEntity).setFocused(false);
                 }
+                // Unselect when move end
+                ((MeasureToolEntity) mSelectedEntity).setFocused(false);
+                // Could not update only the one shape
+                invalidateCanvas(false);
             }
             if (shouldUpdateOnEnd) {
                 if (isInProgress) {

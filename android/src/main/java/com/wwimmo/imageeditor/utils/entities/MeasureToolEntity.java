@@ -139,7 +139,7 @@ public class MeasureToolEntity extends MotionEntity {
         this.mCanvas.save();
         this.mCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         float savedStrokeWidth = mPaint.getStrokeWidth();
-        float outerRadiusFull = outerRadius + innerRadius + strokeWidth;
+        float outerRadiusFull = outerRadius + innerRadius + strokeWidth / 2f;
 
         if (currentPoints.size() > 0) {
             for (int i = 0; i < currentPoints.size(); i++) {
@@ -184,7 +184,7 @@ public class MeasureToolEntity extends MotionEntity {
             mPaint.setStrokeWidth(savedStrokeWidth);
         }
 
-        if (currentPoints.size() > 1) {
+        if (currentPoints.size() > 1 && this.endpointBitmap != null) {
             boolean firstVisited = this.pointsVisited.get(0);
             boolean secondVisited = this.pointsVisited.get(1);
             if (!secondVisited && selectedPoint != this.currentPoints.get(1)) {
@@ -250,14 +250,15 @@ public class MeasureToolEntity extends MotionEntity {
         int centerY = (int) drawPoint.y;
         // Create a circular path
         Path path = new Path();
-        path.addCircle(centerX, centerY, lensSize / 2, Path.Direction.CW);
+        float halfLensSize = lensSize / 2f;
+        path.addCircle(centerX, centerY, halfLensSize, Path.Direction.CW);
         // Clip the canvas to the circular path
         mCanvas.clipPath(path);
         RectF drawingRect = new RectF(
-                centerX - lensSize / 2,
-                centerY - lensSize / 2,
-                centerX + lensSize / 2,
-                centerY + lensSize / 2
+                centerX - halfLensSize,
+                centerY - halfLensSize,
+                centerX + halfLensSize,
+                centerY + halfLensSize
         );
         mCanvas.drawBitmap(mZoomBitmap, null, drawingRect, null);
         mCanvas.restore();
@@ -265,10 +266,10 @@ public class MeasureToolEntity extends MotionEntity {
 
         this.mPaint.setStyle(Paint.Style.STROKE);
         this.mPaint.setStrokeWidth(strokeWidth);
-        this.mCanvas.drawCircle(centerX, centerY, lensSize / 2, this.mPaint);
+        this.mCanvas.drawCircle(centerX, centerY, halfLensSize, this.mPaint);
 
         this.mPaint.setStyle(Paint.Style.FILL);
-        this.mCanvas.drawCircle(centerX, centerY, strokeWidth, this.mPaint);
+        this.mCanvas.drawCircle(centerX, centerY, strokeWidth / 2f, this.mPaint);
     }
 
 
