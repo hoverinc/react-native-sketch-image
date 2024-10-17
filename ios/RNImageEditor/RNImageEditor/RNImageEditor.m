@@ -110,6 +110,15 @@
     return TRUE;
 }
 
+- (BOOL)hasMeasurements {
+    for (MotionEntity *entity in self.motionEntities) {
+        if ([entity class] == [MeasurementEntity class]){
+            return YES;
+        }
+    }
+    return NO;
+}
+
 - (void)drawRect:(CGRect)rect {
     CGContextRef context = UIGraphicsGetCurrentContext();
 
@@ -146,6 +155,12 @@
 
     if (_frozenImage) {
         CGContextDrawImage(context, bounds, _frozenImage);
+        if ([self hasMeasurements]){
+            // draw dark overlay
+            CGContextSetFillColorWithColor(context, [[UIColor.blackColor colorWithAlphaComponent:0.3f] CGColor]);
+            CGContextFillRect(context, bounds);
+            CGContextSetFillColorWithColor(context, [UIColor.clearColor CGColor]);
+        }
     }
 
     if (_translucentFrozenImage && _currentPath.isTranslucent) {
@@ -451,6 +466,13 @@
 
         CGContextDrawImage(context, targetRect, _frozenImage);
         CGContextDrawImage(context, targetRect, _translucentFrozenImage);
+
+        if ([self hasMeasurements]){
+            // draw dark overlay
+            CGContextSetFillColorWithColor(context, [[UIColor.blackColor colorWithAlphaComponent:0.3f] CGColor]);
+            CGContextFillRect(context, targetRect);
+            CGContextSetFillColorWithColor(context, [UIColor.clearColor CGColor]);
+        }
 
         if (includeText) {
             for (BackgroundText *text in _arrTextOnSketch) {
@@ -967,6 +989,8 @@
                               entityStrokeColor:self.entityStrokeColor];
 
     _measurementEntity = entity;
+    [_measurementEntity addPoint:CGPointMake(centerX - 50, centerY)];
+    [_measurementEntity addPoint:CGPointMake(centerX + 50, centerY)];
     [self handleLoadImage:imageShapeAsset];
     [self onAddShape:entity];
 }
@@ -1193,12 +1217,14 @@
             // select shape
             [self updateSelectionOnTapWithLocationPoint:tapLocation];
         } else {
-            if (self.measurementEntity != nil && ![self.measurementEntity isPointInEntity:tapLocation] && [self.measurementEntity getDrawingStep] < 2) {
-                // add new point
-                _isMeasurementInProgress = [_measurementEntity addPoint:tapLocation];
-                _shouldHandleEndMove = true;
-                // Update UI
-                [self.measurementEntity setNeedsDisplay];
+            if (self.measurementEntity != nil && ![self.measurementEntity isPointInEntity:tapLocation]){
+                if ( [self.measurementEntity getDrawingStep] < 2) {
+                    // add new point if posible, return true if added or text is not defined
+                    _isMeasurementInProgress = [_measurementEntity addPoint:tapLocation];
+                    _shouldHandleEndMove = false;
+                    // Update UI
+                    [self.measurementEntity setNeedsDisplay];
+                }
             }
         }
     }
@@ -1212,7 +1238,11 @@
 
         if (state == UIGestureRecognizerStateCancelled || state == UIGestureRecognizerStateEnded) {
             if ([self.selectedEntity class] == [MeasurementEntity class]) {
-                [((MeasurementEntity *)self.selectedEntity) setLocalFocused:false];
+                 if (!_shouldHandleEndMove && [_measurementEntity isTextStep]) {
+                     [self onDrawingStateChanged];
+                 }
+                 [((MeasurementEntity *)self.selectedEntity) setLocalFocused:false];
+
             }
             if (_shouldHandleEndMove) {
                 if (!_isMeasurementInProgress) {
