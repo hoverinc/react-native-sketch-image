@@ -177,7 +177,7 @@ NSTimer *timer;
         }
 
         // Draw indicator for not touched toints, one at a time
-        if ([pointsVisited count] > 1) {
+        if ([pointsVisited count] > 1 && endpointImage != nil) {
             bool visitedFirst = [[pointsVisited objectAtIndex:0] boolValue];
             bool visitedSecond = [[pointsVisited objectAtIndex:1] boolValue];
             if (!visitedSecond && selectedPosition != 1) {
