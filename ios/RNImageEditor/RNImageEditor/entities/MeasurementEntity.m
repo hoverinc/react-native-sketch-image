@@ -82,7 +82,7 @@ NSTimer *timer;
 }
 
 - (BOOL)isCurrentPointsInRect:(CGRect)rect {
-    float touchArea = [self getTouchRadius];
+    float touchArea = 2 * [self getTouchRadius];
     for (int i=0; i < [points count]; i++) {
         NSValue *val = [points objectAtIndex:i];
         CGPoint p = [val CGPointValue];
@@ -293,7 +293,7 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
 
 - (BOOL)isPointInEntity:(CGPoint)point {
     selectedPosition = DEFAULT_SELECTED_POSITION;
-    float touchArea = [self getTouchRadius];
+    float touchArea = 2 * [self getTouchRadius];
     for (int i=0; i < [points count]; i++) {
         NSValue *val = [points objectAtIndex:i];
         CGPoint p = [val CGPointValue];
