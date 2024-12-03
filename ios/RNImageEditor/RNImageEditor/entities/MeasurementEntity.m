@@ -205,7 +205,17 @@ NSTimer *timer;
     CGFloat offsetXDiag = offsetX * cos(angle + M_PI_2);
     CGFloat offsetYDiag = offsetY * sin(angle + M_PI_2);
 
-    return CGPointMake(centerX + offsetXDiag, centerY + offsetYDiag);
+    float midX = centerX + offsetXDiag;
+    float midY = centerY + offsetYDiag;
+    if (midX - textWidth < 0 ||  midX + textWidth > self.bounds.size.width) {
+        midX = centerX - offsetXDiag;
+    }
+
+    if (midY - TEXT_BOX_SIZE < 0 ||  midY + TEXT_BOX_SIZE > self.bounds.size.height) {
+        midY = centerY - offsetYDiag;
+    }
+
+    return CGPointMake(midX, midY);
 }
 
 -(void)drawNotVisitedPointIndicator:(CGContextRef) contextRef withPoint:(CGPoint)point {
