@@ -32,7 +32,8 @@ public class MeasureToolEntity extends MotionEntity {
     private static final int POINT_TOUCH_AREA = 74 / 2;
     private static final int INNER_RADIUS = 12 / 2;
     private static final int OUTER_RADIUS = 16 / 2;
-    private static final int TEXT_BOX_SIZE = 48;
+    private static final int TEXT_BOX_SIZE = 24;
+    private static final int TEXT_BOX_PADDING = 8;
 
     private static final int OUTER_RADIUS_CONNECTION = OUTER_RADIUS - 1;
     private static final int STROKE_WIDTH = 4;
@@ -66,6 +67,7 @@ public class MeasureToolEntity extends MotionEntity {
     private int lensSize;
     private int strokeWidth;
     private int textBoxSize;
+    private int textBoxPadding;
 
 
     public MeasureToolEntity(@NonNull Layer layer,
@@ -94,6 +96,7 @@ public class MeasureToolEntity extends MotionEntity {
         lensSize = Utility.convertDpToPx(dm, LENS_SIZE);
         strokeWidth = Utility.convertDpToPx(dm, STROKE_WIDTH);
         textBoxSize = Utility.convertDpToPx(dm, TEXT_BOX_SIZE);
+        textBoxPadding = Utility.convertDpToPx(dm, TEXT_BOX_PADDING);
     }
 
     private void updateEntity(boolean moveToPreviousCenter) {
@@ -372,22 +375,35 @@ public class MeasureToolEntity extends MotionEntity {
 
         int halfTextHeight = textBoxSize / 2;
         int halfTextWidth = textWidth / 2;
-        float midX = (a.x + b.x) / 2;
-        float midY = (a.y + b.y) / 2;
 
+        double angle = Math.atan2(b.y - a.y, b.x - a.x);
+
+        float offsetXDiag = (float) ((textWidth / 2f + touchRadius) * Math.cos(angle + Math.PI / 2));
+        float offsetYDiag = (float) (touchRadius * Math.sin(angle + Math.PI / 2));
+        float midX = (a.x + b.x) / 2 + offsetXDiag;
+        float midY = (a.y + b.y) / 2 + offsetYDiag;
+        // Verify content fit the screen
+        if (midX - textWidth <= 0 || midX + textWidth > getWidth()) {
+            // switch to opposite side by X
+            midX = (a.x + b.x) / 2 - offsetXDiag;
+        }
+        if (midY - halfTextHeight < 0 || midY + halfTextHeight > getHeight()) {
+            // switch to opposite side by Y
+            midY = (a.y + b.y) / 2 - offsetYDiag;
+        }
         canvas.translate(midX, midY);
         // background first
         bgPaint.setStyle(Paint.Style.FILL);
         RectF bgRect = new RectF();
         bgRect.set(
-                -halfTextHeight - halfTextWidth,
+                - textBoxPadding - halfTextWidth,
                 -halfTextHeight,
-                halfTextWidth + halfTextHeight,
+                halfTextWidth + textBoxPadding,
                 halfTextHeight
         );
-        canvas.drawRoundRect(bgRect, halfTextHeight, halfTextHeight, bgPaint);
+        canvas.drawRoundRect(bgRect, textBoxPadding / 2f, textBoxPadding / 2f, bgPaint);
         // then text
-        canvas.translate(-halfTextWidth, -halfTextHeight / 2);
+        canvas.translate(-halfTextWidth, -halfTextHeight / 2f - textBoxPadding / 2f);
         sl.draw(canvas);
 
 
