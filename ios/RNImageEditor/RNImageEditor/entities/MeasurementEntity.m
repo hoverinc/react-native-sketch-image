@@ -28,6 +28,7 @@ int selectedPosition;
 
 int LENS_WIDTH = 72;
 int LENS_HEIGHT = 72;
+int LENS_OFFSET = 4;
 
 int aimSize = 4;
 
@@ -251,13 +252,13 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
 
 - (void)drawZoomLens:(CGPoint) center withinContext:(CGContextRef)contextRef  withBackground:(CGImageRef)background {
 
-    int x0 = center.x - touchPointSize / 2 - LENS_WIDTH;
-    int y0 = center.y  - touchPointSize / 2 - LENS_HEIGHT;
+    int x0 = center.x - touchPointSize / 2 - LENS_WIDTH - LENS_OFFSET;
+    int y0 = center.y  - touchPointSize / 2 - LENS_HEIGHT  - LENS_OFFSET;
     if (x0 < 0) {
-        x0 = center.x + touchPointSize / 2;
+        x0 = center.x + touchPointSize / 2 + LENS_OFFSET;
     }
     if (y0 < 0) {
-        y0 = center.y + touchPointSize /2;
+        y0 = center.y + touchPointSize /2 + LENS_OFFSET;
     }
 
     // Calculate display rect
@@ -273,9 +274,8 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
     CGImageRef lensImage = CGImageCreateWithImageInRect(background, centerRect);
 
     // Draw zoomed image
-    CGPoint drawingCenter = [self getCornerPosition:LENS_WIDTH withHeight:LENS_HEIGHT];
+    CGContextTranslateCTM(contextRef, centerX, centerY);
     CGRect entityRect = CGRectMake(-LENS_WIDTH/2 , -LENS_HEIGHT/2, LENS_WIDTH , LENS_HEIGHT);
-    CGContextTranslateCTM(contextRef, drawingCenter.x, drawingCenter.y);
     CGContextScaleCTM(contextRef, 1, -1);
     drawCircularImageInContext(contextRef, lensImage, entityRect);
     CGContextScaleCTM(contextRef, 1, -1);

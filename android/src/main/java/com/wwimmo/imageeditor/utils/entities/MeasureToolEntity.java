@@ -209,14 +209,15 @@ public class MeasureToolEntity extends MotionEntity {
     }
 
     private void drawZoomLens(PointF centerPoint, Bitmap background) {
-        // Draw rect near the point
-        float x0 = centerPoint.x - touchRadius;
-        float y0 = centerPoint.y - touchRadius;
-        if (x0 < lensSize) {
-            x0 = centerPoint.x + touchRadius + lensSize;
+        float halfLensSize = lensSize / 2f;
+        float lensOffset = strokeWidth + halfLensSize + touchRadius / 2f;
+        float centerX = centerPoint.x - lensOffset;
+        float centerY = centerPoint.y - lensOffset;
+        if (centerX < halfLensSize) {
+            centerX = centerPoint.x + lensOffset;
         }
-        if (y0 < lensSize) {
-            y0 = centerPoint.y + touchRadius + lensSize;
+        if (centerY < halfLensSize) {
+            centerY = centerPoint.y + lensOffset;
         }
 
 
@@ -239,8 +240,8 @@ public class MeasureToolEntity extends MotionEntity {
         );
 
         mZoomCanvas.save();
+
         // Draw the scaled image
-        PointF drawPoint = this.getLensPoint(lensSize, lensSize);
         Rect targetRect = new Rect(0, 0, lensSize, lensSize);
         mZoomCanvas.save();
         mZoomCanvas.drawBitmap(background, srcRect, targetRect, null);
@@ -248,12 +249,8 @@ public class MeasureToolEntity extends MotionEntity {
         // Post effect
         mCanvas.save();
 
-        // Add center indicator
-        int centerX = (int) drawPoint.x;
-        int centerY = (int) drawPoint.y;
         // Create a circular path
         Path path = new Path();
-        float halfLensSize = lensSize / 2f;
         path.addCircle(centerX, centerY, halfLensSize, Path.Direction.CW);
         // Clip the canvas to the circular path
         mCanvas.clipPath(path);
