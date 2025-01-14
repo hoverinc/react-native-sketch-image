@@ -20,14 +20,15 @@ float ENDPOINT_OFFSET_RATIO = 0.125;
 bool hasFocusHighlight = false;
 int MAX_POINTS_COUNT = 2;
 int DEFAULT_SELECTED_POSITION = -1;
-int TEXT_PADDING = 24;
-int TEXT_BOX_SIZE = 48;
+int TEXT_PADDING = 8;
+int TEXT_BOX_SIZE = 24;
 float pointSize = 12;
 float touchPointSize = 37;
 int selectedPosition;
 
 int LENS_WIDTH = 72;
 int LENS_HEIGHT = 72;
+int LENS_OFFSET = 4;
 
 int aimSize = 4;
 
@@ -164,7 +165,8 @@ NSTimer *timer;
             if (i == 1 && hasText) {
                 NSValue *preVal = [points objectAtIndex:i - 1];
                 CGPoint prevPoint = [preVal CGPointValue];
-                CGPoint centerPoint = CGPointMake((prevPoint.x + p.x)/2, (prevPoint.y + p.y)/2);
+                CGPoint centerPoint = [self getTextUncrossedPosition:prevPoint withB:p withTextWidth:self.textSize.width/2];
+
                 [self drawText:contextRef withCenterPoint:centerPoint];
             }
             // draw actual point
@@ -176,7 +178,7 @@ NSTimer *timer;
             [self drawZoomLens:p withinContext:contextRef withBackground:background];
         }
 
-        // Draw indicator for not touched toints, one at a time
+        // Draw indicator for not touched points, one at a time
         if ([pointsVisited count] > 1 && endpointImage != nil) {
             bool visitedFirst = [[pointsVisited objectAtIndex:0] boolValue];
             bool visitedSecond = [[pointsVisited objectAtIndex:1] boolValue];
@@ -190,6 +192,31 @@ NSTimer *timer;
 
         }
     }
+}
+
+-(CGPoint)getTextUncrossedPosition:(CGPoint) a withB:(CGPoint) b withTextWidth:(float) textWidth {
+    float centerX = (a.x + b.x) /2;
+    float centerY = (a.y + b.y) /2;
+
+    float offsetX = textWidth + touchPointSize;
+    float offsetY = touchPointSize;
+
+    CGFloat angle = atan2(b.y - a.y, b.x - a.x);
+    CGFloat smallThreshold = 0.1;
+    CGFloat offsetXDiag = offsetX * cos(angle + M_PI_2);
+    CGFloat offsetYDiag = offsetY * sin(angle + M_PI_2);
+
+    float midX = centerX + offsetXDiag;
+    float midY = centerY + offsetYDiag;
+    if (midX - textWidth < 0 ||  midX + textWidth > self.bounds.size.width) {
+        midX = centerX - offsetXDiag;
+    }
+
+    if (midY - TEXT_BOX_SIZE < 0 ||  midY + TEXT_BOX_SIZE > self.bounds.size.height) {
+        midY = centerY - offsetYDiag;
+    }
+
+    return CGPointMake(midX, midY);
 }
 
 -(void)drawNotVisitedPointIndicator:(CGContextRef) contextRef withPoint:(CGPoint)point {
@@ -225,13 +252,13 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
 
 - (void)drawZoomLens:(CGPoint) center withinContext:(CGContextRef)contextRef  withBackground:(CGImageRef)background {
 
-    int x0 = center.x - touchPointSize / 2 - LENS_WIDTH;
-    int y0 = center.y  - touchPointSize / 2 - LENS_HEIGHT;
+    int x0 = center.x - touchPointSize / 2 - LENS_WIDTH - LENS_OFFSET;
+    int y0 = center.y  - touchPointSize / 2 - LENS_HEIGHT  - LENS_OFFSET;
     if (x0 < 0) {
-        x0 = center.x + touchPointSize / 2;
+        x0 = center.x + touchPointSize / 2 + LENS_OFFSET;
     }
     if (y0 < 0) {
-        y0 = center.y + touchPointSize /2;
+        y0 = center.y + touchPointSize /2 + LENS_OFFSET;
     }
 
     // Calculate display rect
@@ -247,9 +274,8 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
     CGImageRef lensImage = CGImageCreateWithImageInRect(background, centerRect);
 
     // Draw zoomed image
-    CGPoint drawingCenter = [self getCornerPosition:LENS_WIDTH withHeight:LENS_HEIGHT];
+    CGContextTranslateCTM(contextRef, centerX, centerY);
     CGRect entityRect = CGRectMake(-LENS_WIDTH/2 , -LENS_HEIGHT/2, LENS_WIDTH , LENS_HEIGHT);
-    CGContextTranslateCTM(contextRef, drawingCenter.x, drawingCenter.y);
     CGContextScaleCTM(contextRef, 1, -1);
     drawCircularImageInContext(contextRef, lensImage, entityRect);
     CGContextScaleCTM(contextRef, 1, -1);
@@ -374,7 +400,7 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
     CGContextAddLineToPoint(contextRef, x2, y2);
     CGContextStrokePath(contextRef);
 
-    // for the end pont
+    // for the end point
     x1 = endPoint.x + size * cos(thetaTop);
     y1 = endPoint.y + size * sin(thetaTop);
 
@@ -538,7 +564,7 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
                                        self.textSize.width + 2 * TEXT_PADDING,
                                        TEXT_BOX_SIZE
                                        );
-    UIBezierPath *roundedRect = [UIBezierPath bezierPathWithRoundedRect:rectWthPadding cornerRadius: TEXT_PADDING];
+    UIBezierPath *roundedRect = [UIBezierPath bezierPathWithRoundedRect:rectWthPadding cornerRadius: TEXT_PADDING / 2];
     [roundedRect fillWithBlendMode: kCGBlendModeNormal alpha:1.0f];
     [self.entityStrokeColor setFill];
     [roundedRect fill];
