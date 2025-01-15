@@ -340,12 +340,33 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
     // ignore call
 }
 
+- (CGFloat)limitXPoint:(CGFloat)x {
+    if (x <= 0) {
+        return 0;
+    }
+    if (x >= self.bounds.size.width){
+        return self.bounds.size.width;
+    }
+    return x;
+}
+
+- (CGFloat)limitYPoint:(CGFloat)y {
+    if (y <= 0) {
+        return 0;
+    }
+    if (y >= self.bounds.size.height){
+        return self.bounds.size.height;
+    }
+    return y;
+}
+
+
 - (void)moveEntityTo:(CGPoint)locationDiff {
     if (selectedPosition != DEFAULT_SELECTED_POSITION && [points count] > selectedPosition){
         NSValue *val = [points objectAtIndex:selectedPosition];
         CGPoint p = [val CGPointValue];
-        p.x = p.x + locationDiff.x;
-        p.y = p.y + locationDiff.y;
+        p.x = [self limitXPoint:(p.x + locationDiff.x)];
+        p.y = [self limitYPoint:(p.y + locationDiff.y)];
         points[selectedPosition] = [NSValue valueWithCGPoint:p];
         pointsVisited[selectedPosition] = [NSNumber numberWithBool:TRUE];
     }

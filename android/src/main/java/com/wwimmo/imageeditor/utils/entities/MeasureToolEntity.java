@@ -550,10 +550,18 @@ public class MeasureToolEntity extends MotionEntity {
         return touchRadius;
     }
 
+    float limitX (float x) {
+        return Math.max(Math.min(x, getWidth()), 0);
+    }
+
+    float limitY (float y) {
+        return Math.max(Math.min(y, getHeight()), 0);
+    }
+
     public boolean handleTranslate(PointF delta) {
         if (selectedPoint != null) {
-            float newX = selectedPoint.x + delta.x;
-            float newY = selectedPoint.y + delta.y;
+            float newX = limitX(selectedPoint.x + delta.x);
+            float newY = limitY(selectedPoint.y + delta.y);
             boolean toCloseToOtherPoint = false;
             for (int i = 0; i < currentPoints.size(); i++) {
                 PointF originPoint = currentPoints.get(i);
