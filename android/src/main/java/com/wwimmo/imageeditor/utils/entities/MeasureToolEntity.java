@@ -229,7 +229,7 @@ public class MeasureToolEntity extends MotionEntity {
 
         int zoomedHalfWidth = lensSize / ZOOM / 2;
         int zoomedHalfHeight = lensSize / ZOOM / 2;
-        float scaleXY = (float) background.getWidth() / this.mCanvas.getWidth();
+        float scaleXY = (float) background.getWidth() / getWidth();
         int srcCenterX = (int) (centerPoint.x * scaleXY);
         int srcCenterY = (int) (centerPoint.y * scaleXY);
         Rect srcRect = new Rect(
