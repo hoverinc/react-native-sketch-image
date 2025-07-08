@@ -551,11 +551,13 @@ public class MeasureToolEntity extends MotionEntity {
     }
 
     float limitX (float x) {
-        return Math.max(Math.min(x, getWidth()), 0);
+        float minWidth = Math.min(getWidth(), getMeasuredWidth());
+        return Math.max(Math.min(x, minWidth), 0);
     }
 
     float limitY (float y) {
-        return Math.max(Math.min(y, getHeight()), 0);
+        float minHeight = Math.min(getHeight(), getMeasuredHeight());
+        return Math.max(Math.min(y, minHeight), 0);
     }
 
     public boolean handleTranslate(PointF delta) {

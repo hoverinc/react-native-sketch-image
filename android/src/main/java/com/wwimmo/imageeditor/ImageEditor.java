@@ -988,7 +988,7 @@ public class ImageEditor extends View {
         if (mDrawingCanvas.getWidth() > mSketchCanvas.getWidth() || mDrawingCanvas.getHeight() > mSketchCanvas.getHeight()) {
             measurementEntity = new MeasureToolEntity(layer, mDrawingCanvas.getWidth(), mDrawingCanvas.getHeight(), imageShapeAsset, dm);
         } else {
-            measurementEntity = new MeasureToolEntity(layer, mSketchCanvas.getWidth(), mSketchCanvas.getHeight(), imageShapeAsset, dm);
+            measurementEntity = new MeasureToolEntity(layer, getWidth(), getHeight(), imageShapeAsset, dm);
         }
         if (imageShapeAsset != null) {
             getBitmap(prepareUri(imageShapeAsset), 0, 0, new BaseBitmapDataSubscriber() {
@@ -1011,8 +1011,10 @@ public class ImageEditor extends View {
             });
         }
         addEntityAndPosition(measurementEntity);
-        measurementEntity.addPoint(measurementEntity.getWidth() * 0.35f, measurementEntity.getHeight() / 2);
-        measurementEntity.addPoint(measurementEntity.getWidth() * 0.65f, measurementEntity.getHeight() / 2);
+        float width = getWidth();
+        float height = getHeight();
+        measurementEntity.addPoint(width * 0.35f, height / 2);
+        measurementEntity.addPoint(width * 0.65f, height / 2);
     }
 
     protected void addSquareEntity(int width) {
