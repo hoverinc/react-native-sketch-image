@@ -610,7 +610,7 @@ public class ImageEditor extends View {
                 String path = createdFile.getPath();
                 this.onSaved(true, path);
 
-                this.updateExif(path, this.getMeasuredPosition(cropToImageSize));
+                this.updateExif(path);
 
                 success = true;
             } catch (Exception e) {
@@ -630,15 +630,12 @@ public class ImageEditor extends View {
 
     }
 
-    public void updateExif(String path, String position) {
+    public void updateExif(String path) {
         try {
             File originalFile = new File(currentFilePath);
 
             ExifInterface exif = new ExifInterface(path);
             exif.setAttribute(ExifInterface.TAG_IMAGE_UNIQUE_ID, originalFile.getName());
-            if (position != null) {
-                exif.setAttribute(ExifInterface.TAG_USER_COMMENT, position);
-            }
             exif.saveAttributes();
         } catch (Exception e) {
             Log.e("Update exif", "Failed to update exif!");
