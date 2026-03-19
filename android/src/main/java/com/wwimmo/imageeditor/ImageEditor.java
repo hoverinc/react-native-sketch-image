@@ -204,32 +204,6 @@ public class ImageEditor extends View {
         return Base64.encodeToString(byteArrayOS.toByteArray(), Base64.DEFAULT);
     }
 
-    private String getMeasuredPosition(boolean cropToImageSize) {
-        MeasureToolEntity lastEntity = null;
-        for (int i = 0; i < mEntities.size(); i++) {
-            if (mEntities.get(i) instanceof MeasureToolEntity) {
-                lastEntity = (MeasureToolEntity) mEntities.get(i);
-            }
-        }
-        if (lastEntity != null) {
-            double scale = mBackgroundImage != null && cropToImageSize ? (double) mOriginalBitmapWidth / getWidth() : 1;
-            int pointsSize = lastEntity.getCurrentPoints().size();
-            int[][] positions = new int[pointsSize][];
-            for (int i = 0; i < pointsSize; i++) {
-                PointF position = lastEntity.getCurrentPoints().get(i);
-                int x = (int) (position.x * scale);
-                int y = (int) (position.y * scale);
-                positions[i] = new int[]{x, y};
-            }
-            Map exifPositionData = new HashMap();
-            exifPositionData.put("rmPoints", Arrays.deepToString(positions));
-            String result = exifPositionData.toString().replace("=", ":");
-            return result;
-        } else {
-            return null;
-        }
-    }
-
     private Bitmap createImage(boolean transparent, boolean includeImage, boolean includeText, boolean cropToImageSize) {
         Bitmap bitmap = Bitmap.createBitmap(
                 mBackgroundImage != null && cropToImageSize ? mOriginalBitmapWidth : getWidth(),
