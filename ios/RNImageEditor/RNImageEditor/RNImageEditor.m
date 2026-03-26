@@ -1233,8 +1233,8 @@
         if (state != UIGestureRecognizerStateCancelled) {
             CGPoint translation = [sender translationInView:self];
             CGPoint newCenter = CGPointMake(self.selectedEntity.center.x + translation.x, self.selectedEntity.center.y + translation.y);
-            CGFloat halfW = self.selectedEntity.bounds.size.width / 2.0;
-            CGFloat halfH = self.selectedEntity.bounds.size.height / 2.0;
+            CGFloat halfW = self.selectedEntity.frame.size.width / 2.0;
+            CGFloat halfH = self.selectedEntity.frame.size.height / 2.0;
             newCenter.x = MAX(halfW, MIN(newCenter.x, self.bounds.size.width - halfW));
             newCenter.y = MAX(halfH, MIN(newCenter.y, self.bounds.size.height - halfH));
             self.selectedEntity.center = newCenter;
