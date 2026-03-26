@@ -1231,8 +1231,12 @@
 
     if (self.selectedEntity) {
         if (state != UIGestureRecognizerStateCancelled) {
-            [self.selectedEntity moveEntityTo:[sender translationInView:self.selectedEntity]];
-            [sender setTranslation:CGPointZero inView:sender.view];
+            CGPoint translation = [sender translationInView:self];
+            CGPoint newCenter = CGPointMake(self.selectedEntity.center.x + translation.x, self.selectedEntity.center.y + translation.y);
+            newCenter.x = MAX(0, MIN(newCenter.x, self.bounds.size.width));
+            newCenter.y = MAX(0, MIN(newCenter.y, self.bounds.size.height));
+            self.selectedEntity.center = newCenter;
+            [sender setTranslation:CGPointZero inView:self];
             [self setNeedsDisplayInRect:self.selectedEntity.bounds];
         }
 
