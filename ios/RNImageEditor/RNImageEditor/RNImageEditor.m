@@ -1231,8 +1231,19 @@
 
     if (self.selectedEntity) {
         if (state != UIGestureRecognizerStateCancelled) {
-            [self.selectedEntity moveEntityTo:[sender translationInView:self.selectedEntity]];
-            [sender setTranslation:CGPointZero inView:sender.view];
+            CGPoint translation = [sender translationInView:self];
+            if ([self.selectedEntity class] == [MeasurementEntity class]) {
+                [self.selectedEntity moveEntityTo:translation];
+                [sender setTranslation:CGPointZero inView:self];
+            } else {
+                CGPoint newCenter = CGPointMake(self.selectedEntity.center.x + translation.x, self.selectedEntity.center.y + translation.y);
+                CGFloat halfW = (self.selectedEntity.bounds.size.width * self.selectedEntity.scale) / 2.0;
+                CGFloat halfH = (self.selectedEntity.bounds.size.height * self.selectedEntity.scale) / 2.0;
+                newCenter.x = MAX(halfW, MIN(newCenter.x, self.bounds.size.width - halfW));
+                newCenter.y = MAX(halfH, MIN(newCenter.y, self.bounds.size.height - halfH));
+                self.selectedEntity.center = newCenter;
+                [sender setTranslation:CGPointZero inView:self];
+            }
             [self setNeedsDisplayInRect:self.selectedEntity.bounds];
         }
 
