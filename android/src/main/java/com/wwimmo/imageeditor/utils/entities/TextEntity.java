@@ -193,6 +193,17 @@ public class TextEntity extends MotionEntity {
         updateEntity(true);
     }
 
+    /**
+     * The text bitmap and font size already follow the canvas size, so scaling the fit scale
+     * as well would shrink the text twice. Rebuild the bitmap for the new canvas instead.
+     */
+    @Override
+    public void onCanvasResized(int newWidth, int newHeight) {
+        canvasWidth = newWidth;
+        canvasHeight = newHeight;
+        updateEntity(false);
+    }
+
     @Override
     public void release() {
         if (bitmap != null && !bitmap.isRecycled()) {

@@ -609,6 +609,21 @@ void drawCircularImageInContext(CGContextRef context, CGImageRef image, CGRect r
     endpointImage = image;
 }
 
+- (void)rescaleToParentWidth:(NSInteger)parentWidth
+                parentHeight:(NSInteger)parentHeight
+                      scaleX:(CGFloat)scaleX
+                      scaleY:(CGFloat)scaleY {
+    for (NSUInteger i = 0; i < [points count]; i++) {
+        CGPoint p = [points[i] CGPointValue];
+        points[i] = [NSValue valueWithCGPoint:CGPointMake(p.x * scaleX, p.y * scaleY)];
+    }
+    self.parentWidth = parentWidth;
+    self.parentHeight = parentHeight;
+    self.frame = CGRectMake(self.frame.origin.x * scaleX, self.frame.origin.y * scaleY, parentWidth, parentHeight);
+    self.centerPoint = self.center;
+    [self setNeedsDisplay];
+}
+
 - (NSMutableArray *) getPoints {
     return points;
 }

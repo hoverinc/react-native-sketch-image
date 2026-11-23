@@ -22,6 +22,9 @@
 
 - (CGRect)addPoint:(CGPoint) point;
 
+// Maps the path into a canvas resized by scaleX x scaleY, scaling the stroke width by strokeScale.
+- (void)scaleByX:(CGFloat)scaleX y:(CGFloat)scaleY strokeScale:(CGFloat)strokeScale;
+
 - (void)drawLastPointInContext:(CGContextRef)context;
 - (void)drawInContext:(CGContextRef)context;
 

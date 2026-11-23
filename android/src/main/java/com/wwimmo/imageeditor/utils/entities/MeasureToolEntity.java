@@ -41,8 +41,8 @@ public class MeasureToolEntity extends MotionEntity {
     private static final int ZOOM = 3;
     private static final float ENDPOINT_OFFSET_RATIO = 1f / 8f;
     private static final int alpha = (int) (255 * 0.3f);
-    private final int mWidth;
-    private final int mHeight;
+    private int mWidth;
+    private int mHeight;
     private final List<PointF> currentPoints;
     private final List<Boolean> pointsVisited;
     private final TextPaint mTextPaint;
@@ -485,6 +485,29 @@ public class MeasureToolEntity extends MotionEntity {
 
     public void updateEntity() {
         updateEntity(true);
+    }
+
+    /**
+     * The measurement covers the whole canvas and keeps its endpoints in canvas pixels,
+     * so they move with the background and the bitmap is rebuilt at the new size.
+     */
+    @Override
+    public void onCanvasResized(int newWidth, int newHeight) {
+        if (mWidth > 0 && mHeight > 0) {
+            float scaleX = 1.0F * newWidth / mWidth;
+            float scaleY = 1.0F * newHeight / mHeight;
+            for (PointF point : currentPoints) {
+                point.set(point.x * scaleX, point.y * scaleY);
+            }
+        }
+        canvasWidth = newWidth;
+        canvasHeight = newHeight;
+        mWidth = newWidth;
+        mHeight = newHeight;
+        release();
+        mBitmap = null;
+        mCanvas = null;
+        updateEntity(false);
     }
 
     @Override

@@ -100,8 +100,12 @@
 - (void)dealloc {
     CGContextRelease(_drawingContext);
     _drawingContext = nil;
+    CGContextRelease(_translucentDrawingContext);
+    _translucentDrawingContext = nil;
     CGImageRelease(_frozenImage);
     _frozenImage = nil;
+    CGImageRelease(_translucentFrozenImage);
+    _translucentFrozenImage = nil;
 }
 
 
@@ -201,9 +205,16 @@
     [super layoutSubviews];
 
     if (!CGSizeEqualToSize(self.bounds.size, _lastSize)) {
+        CGSize oldSize = _lastSize;
         _lastSize = self.bounds.size;
+        // A resize (such as an iPhone Duo folding or unfolding) moves the drawings with the background.
+        if (oldSize.width > 0 && oldSize.height > 0 && _lastSize.width > 0 && _lastSize.height > 0) {
+            [self rescaleContentFromSize:oldSize toSize:_lastSize];
+        }
         CGContextRelease(_drawingContext);
         _drawingContext = nil;
+        CGContextRelease(_translucentDrawingContext);
+        _translucentDrawingContext = nil;
         [self createDrawingContext];
         _needsFullRedraw = YES;
         _backgroundImageScaled = nil;
@@ -220,6 +231,23 @@
         }
 
         [self setNeedsDisplay];
+    }
+}
+
+- (void)rescaleContentFromSize:(CGSize)oldSize toSize:(CGSize)newSize {
+    CGFloat scaleX = newSize.width / oldSize.width;
+    CGFloat scaleY = newSize.height / oldSize.height;
+    CGFloat strokeScale = sqrt(scaleX * scaleY);
+
+    for (RNImageEditorData *path in _paths) {
+        [path scaleByX:scaleX y:scaleY strokeScale:strokeScale];
+    }
+
+    for (MotionEntity *entity in self.motionEntities) {
+        [entity rescaleToParentWidth:newSize.width
+                        parentHeight:newSize.height
+                              scaleX:scaleX
+                              scaleY:scaleY];
     }
 }
 

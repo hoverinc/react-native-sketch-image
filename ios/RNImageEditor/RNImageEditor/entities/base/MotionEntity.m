@@ -123,6 +123,31 @@
     }
 }
 
+- (void)rescaleToParentWidth:(NSInteger)parentWidth
+                parentHeight:(NSInteger)parentHeight
+                      scaleX:(CGFloat)scaleX
+                      scaleY:(CGFloat)scaleY {
+    // The rendered center is center + (tx, ty), so scaling both by the canvas factors moves it with the
+    // background. The size is scaled uniformly so shapes don't stretch if the aspect ratio shifts slightly.
+    CGFloat uniformScale = sqrt(scaleX * scaleY);
+    CGAffineTransform transform = self.transform;
+    transform.a *= uniformScale;
+    transform.b *= uniformScale;
+    transform.c *= uniformScale;
+    transform.d *= uniformScale;
+    transform.tx *= scaleX;
+    transform.ty *= scaleY;
+
+    self.center = CGPointMake(self.center.x * scaleX, self.center.y * scaleY);
+    self.transform = transform;
+    self.centerPoint = self.center;
+    self.scale *= uniformScale;
+    self.parentWidth = parentWidth;
+    self.parentHeight = parentHeight;
+    [self setContentScaleFactor:self.parentScreenScale * self.scale];
+    [self setNeedsDisplay];
+}
+
 - (void)drawContent:(CGRect)rect withinContext:(CGContextRef)contextRef {
     NSAssert(NO, @"This is an abstract method and should be overridden");
 }

@@ -67,5 +67,10 @@ static const int DEFAULT_DRAWING_STEP = -1 ;
 - (NSString *)getShapeType;
 - (NSString *)getEntityId;
 - (void)setMeasuredSize: (NSInteger)width withHeight:(NSInteger)height;
+// Keeps the entity on the same spot of the background when the parent canvas is resized.
+- (void)rescaleToParentWidth:(NSInteger)parentWidth
+                parentHeight:(NSInteger)parentHeight
+                      scaleX:(CGFloat)scaleX
+                      scaleY:(CGFloat)scaleY;
 
 @end
