@@ -15,7 +15,7 @@ import java.util.ArrayList;
 public class SketchData {
     public final ArrayList<PointF> points = new ArrayList<PointF>();
     public final int id, strokeColor;
-    public final float strokeWidth;
+    public float strokeWidth;
     public final boolean isTranslucent;
 
     private Paint mPaint;
@@ -103,6 +103,19 @@ public class SketchData {
         updateRect.roundOut(integralRect);
         
         return integralRect;
+    }
+
+    /**
+     * Maps the path into a canvas resized by scaleX x scaleY, scaling the stroke width by strokeScale.
+     */
+    public void scale(float scaleX, float scaleY, float strokeScale) {
+        for (PointF p : points) {
+            p.set(p.x * scaleX, p.y * scaleY);
+        }
+        strokeWidth *= strokeScale;
+        mPaint = null;
+        mDirty = null;
+        mPath = this.isTranslucent ? evaluatePath() : null;
     }
 
     public void drawLastPoint(Canvas canvas) {

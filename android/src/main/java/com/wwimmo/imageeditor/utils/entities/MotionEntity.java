@@ -87,6 +87,20 @@ public abstract class MotionEntity {
         return isSelected;
     }
 
+    /**
+     * Keeps the entity on the same spot of the background when the parent canvas is resized.
+     * The position is stored relative to the canvas, so only the canvas size and the fit scale change.
+     */
+    public void onCanvasResized(int newWidth, int newHeight) {
+        if (canvasWidth > 0 && canvasHeight > 0) {
+            float scaleX = 1.0F * newWidth / canvasWidth;
+            float scaleY = 1.0F * newHeight / canvasHeight;
+            holyScale *= (float) Math.sqrt(scaleX * scaleY);
+        }
+        canvasWidth = newWidth;
+        canvasHeight = newHeight;
+    }
+
     public void setIsSelected(boolean isSelected) {
         this.isSelected = isSelected;
     }

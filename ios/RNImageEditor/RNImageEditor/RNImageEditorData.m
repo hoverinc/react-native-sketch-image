@@ -107,6 +107,17 @@
     return updateRect;
 }
 
+- (void)scaleByX:(CGFloat)scaleX y:(CGFloat)scaleY strokeScale:(CGFloat)strokeScale {
+    NSUInteger pointsCount = _points.count;
+    for (NSUInteger i = 0; i < pointsCount; i++) {
+        CGPoint p = _points[i].CGPointValue;
+        _points[i] = [NSValue valueWithCGPoint:CGPointMake(p.x * scaleX, p.y * scaleY)];
+    }
+    _strokeWidth *= strokeScale;
+    _path = _isTranslucent ? [self evaluatePath] : nil;
+    _dirty = CGRectZero;
+}
+
 - (void)drawLastPointInContext:(CGContextRef)context {
     NSUInteger pointsCount = _points.count;
     if (pointsCount < 1) {

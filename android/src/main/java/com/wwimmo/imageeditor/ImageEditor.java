@@ -356,6 +356,10 @@ public class ImageEditor extends View {
         super.onSizeChanged(w, h, oldw, oldh);
 
         if (getWidth() > 0 && getHeight() > 0) {
+            // A resize (such as a foldable folding or unfolding) moves the drawings with the background.
+            if (oldw > 0 && oldh > 0) {
+                rescaleContent(oldw, oldh, w, h);
+            }
             mDrawingBitmap = Bitmap.createBitmap(getWidth(), getHeight(),
                     Bitmap.Config.ARGB_8888);
             mDrawingCanvas = new Canvas(mDrawingBitmap);
@@ -380,6 +384,19 @@ public class ImageEditor extends View {
 
             mNeedsFullRedraw = true;
             invalidate();
+        }
+    }
+
+    private void rescaleContent(int oldWidth, int oldHeight, int newWidth, int newHeight) {
+        float scaleX = 1.0F * newWidth / oldWidth;
+        float scaleY = 1.0F * newHeight / oldHeight;
+        float strokeScale = (float) Math.sqrt(scaleX * scaleY);
+
+        for (SketchData path : mPaths) {
+            path.scale(scaleX, scaleY, strokeScale);
+        }
+        for (MotionEntity entity : mEntities) {
+            entity.onCanvasResized(newWidth, newHeight);
         }
     }
 
@@ -942,8 +959,10 @@ public class ImageEditor extends View {
         ImageRequest request = builder.build();
         DataSource<CloseableReference<CloseableImage>> dataSource = imagePipeline.fetchDecodedImage(request, mContext);
 
+        // Fresco 3.x (React Native 0.88) only exposes the three-argument constructor to Java;
+        // 2 and 1 are its defaults for the I/O and lightweight background pools.
         dataSource.subscribe(subscriber,
-                new DefaultExecutorSupplier(1).forBackgroundTasks());
+                new DefaultExecutorSupplier(1, 2, 1).forBackgroundTasks());
         return dataSource;
     }
 
